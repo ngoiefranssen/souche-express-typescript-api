@@ -5,11 +5,10 @@ import { ValidatedRequest } from '../../middlewares/validation.middleware';
 import { createStatuEmployeInput, DeleteStatuEmployeInput, GetStatuEmployeInput, ListStatuEmployeInput } from '../../schemas/admin/statut.employe.schema';
 
 
-
 // ==================== CRÉER UN statut ====================
 export const createStatutEmploye = asyncHandler(
     async (req: Request, res: Response, _next: NextFunction): Promise<void> => {
-        const { libelle_statut_employe, descr_statut_employe }: createStatuEmployeInput = (req as ValidatedRequest).validated.body;
+        const { libelle_statut_employe, descr_statut_employe }: createStatuEmployeInput = (req as ValidatedRequest).validated?.body;
 
         try {
             // Vérifier si le statut existe déjà
@@ -51,7 +50,7 @@ export const createStatutEmploye = asyncHandler(
 export const listStatutEmployes = asyncHandler(
     async (req: Request, res: Response, _next: NextFunction): Promise<void> => {
         const validatedReq = req as ValidatedRequest;
-        const queryData = validatedReq.validated?.query || req.query;
+        const queryData = validatedReq.validated?.query || req?.query;
 
         const {
             page = 1,
