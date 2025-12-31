@@ -171,7 +171,6 @@ export const errorHandler = (
         return;
 
       default:
-        console.error('Erreur PostgreSQL non gérée:', pgError);
         res.status(500).json({
           status: 'error',
           message: 'Erreur de base de données',

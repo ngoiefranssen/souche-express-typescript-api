@@ -149,9 +149,6 @@ export const listProfils = asyncHandler(
                 },
             });
         } catch (err: any) {
-            console.error('=== ERREUR listProfils ===');
-            console.error(err);
-
             if (err instanceof ValidationError) throw err;
             throw new DatabaseError(
                 `Impossible de récupérer la liste des profils : ${err.message}`

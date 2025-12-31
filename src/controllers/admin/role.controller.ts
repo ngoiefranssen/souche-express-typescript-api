@@ -49,7 +49,7 @@ export const createRole = asyncHandler(
     }
 );
 
-// ==================== LISTER LES roles ====================
+// ==================== LISTER LES ROLES ====================
 export const listRoles = asyncHandler(
     async (req: Request, res: Response, _next: NextFunction): Promise<void> => {
         const validatedReq = req as ValidatedRequest;
@@ -145,9 +145,6 @@ export const listRoles = asyncHandler(
                 },
             });
         } catch (err: any) {
-            console.error('=== ERREUR listroles ===');
-            console.error(err);
-
             if (err instanceof ValidationError) throw err;
             throw new DatabaseError(
                 `Impossible de récupérer la liste des roles : ${err.message}`
@@ -156,7 +153,7 @@ export const listRoles = asyncHandler(
     }
 );
 
-// ==================== RÉCUPÉRER UN role ====================
+// ==================== RÉCUPÉRER UN ROLE ====================
 export const getRole = asyncHandler(
     async (req: Request, res: Response, _next: NextFunction): Promise<void> => {
         const { id }: GetRoleInput = (req as ValidatedRequest).validated?.params;
@@ -190,7 +187,7 @@ export const getRole = asyncHandler(
     }
 );
 
-// ==================== METTRE À JOUR UN role ====================
+// ==================== METTRE À JOUR UN ROLE ====================
 export const updateRole = asyncHandler(
     async (req: Request, res: Response, _next: NextFunction): Promise<void> => {
         const { id } = (req as ValidatedRequest).validated?.params;
@@ -261,7 +258,7 @@ export const updateRole = asyncHandler(
     }
 );
 
-// ==================== SUPPRIMER UN role ====================
+// ==================== SUPPRIMER UN ROLE ====================
 export const deleteRole = asyncHandler(
     async (req: Request, res: Response, _next: NextFunction): Promise<void> => {
         const { id }: DeleteRoleInput = (req as ValidatedRequest).validated.params;
