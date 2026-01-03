@@ -1,5 +1,4 @@
 import 'dotenv/config';
-
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -10,6 +9,7 @@ import fileUpload from 'express-fileupload';
 import { errorHandler, notFoundHandler } from './utils/errors';
 import { routesProvider } from './routes/provider.routes';
 import { env } from './db/config/env';
+import { sequelize } from './db/sequelize';
 
 const app = express();
 
@@ -63,25 +63,6 @@ const limiter = rateLimit({
 // ==================== Routes ====================
 app.use('/api/v1', limiter, routesProvider);
 
-// Debug : afficher toutes les routes
-function printRoutes(stack: any[], prefix = '') {
-  stack.forEach((layer: any) => {
-    if (layer.route) {
-      const methods = Object.keys(layer.route.methods).join(', ').toUpperCase();
-      console.log(`${methods.padEnd(7)} ${prefix}${layer.route.path}`);
-    } else if (layer.name === 'router' && layer.handle.stack) {
-      const path = layer.regexp.source
-        .replace('\\/?', '')
-        .replace('(?=\\/|$)', '')
-        .replace(/\\\//g, '/')
-        .replace('^', '')
-        .replace('$', '');
-      printRoutes(layer.handle.stack, prefix + path);
-    }
-  });
-}
-printRoutes(app._router.stack, '');
-
 // ==================== Gestion des erreurs ====================
 // 404 - DOIT être après toutes les routes
 app.use(notFoundHandler);
@@ -92,13 +73,21 @@ app.use(errorHandler);
 // ==================== Démarrage du serveur ====================
 const startServer = async (): Promise<void> => {
   try {
-    const port = env.PORT || 3000;
+    await sequelize.authenticate();
+
+    // Synchroniser les modèles (uniquement en développement)
+    if (env.NODE_ENV === 'development') {
+      await sequelize.sync({ alter: false });
+    }
+
+    // Démarrer le serveur
+    const port = env.PORT || 7700;
 
     app.listen(port, () => {
-      console.log(`Serveur démarré sur http://localhost:${port}`);
+      console.log(`\n Serveur démarré sur http://localhost:${port}`);
     });
+
   } catch (error) {
-    console.error('Erreur lors du démarrage du serveur :', error);
     process.exit(1);
   }
 };

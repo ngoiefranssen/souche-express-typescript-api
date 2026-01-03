@@ -3,12 +3,12 @@ import { z } from 'zod';
 // ==================== Schéma de création ====================
 export const createRoleSchema = z.object({
   body: z.object({
-    libelle_role: z
+    label: z
       .string()
       .min(3, { message: 'Le libellé doit contenir au moins 3 caractères' })
       .max(100, { message: 'Le libellé ne peut pas dépasser 100 caractères' })
       .trim(),
-    descr_role: z
+    description: z
       .string()
       .max(254, { message: 'La description ne peut pas dépasser 254 caractères' })
       .trim()
@@ -26,7 +26,7 @@ export const listRoleSchema = z.object({
       (val) => parseInt(val, 10)).pipe(z.number().int().min(1).max(100)),
     search: z
       .string().trim().optional(),
-    orderBy: z.enum(['libelle_role']).optional().default('libelle_role'),
+    orderBy: z.enum(['label']).optional().default('label'),
     order: z.enum(['ASC', 'DESC']).optional().default('DESC'),
   }),
 });
@@ -50,13 +50,13 @@ export const updateRoleSchema = z.object({
       .pipe(z.number().int().positive({ message: 'ID invalide' })),
   }),
   body: z.object({
-    libelle_role: z
+    label: z
       .string()
       .min(3, { message: 'Le libellé doit contenir au moins 3 caractères' })
       .max(100, { message: 'Le libellé ne peut pas dépasser 100 caractères' })
       .trim()
       .optional(),
-    descr_role: z
+    description: z
       .string()
       .max(200, { message: 'La description ne peut pas dépasser 200 caractères' })
       .trim()
