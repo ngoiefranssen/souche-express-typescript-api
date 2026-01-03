@@ -43,11 +43,6 @@ export const createProfile = asyncHandler(
           created_at: profile.createdAt,
           updated_at: profile.updatedAt,
         },
-        // _links: {
-        //   self: { href: `/api/v1/profiles/${profile.id}` },
-        //   update: { href: `/api/v1/profiles/${profile.id}`, method: 'PUT' },
-        //   delete: { href: `/api/v1/profiles/${profile.id}`, method: 'DELETE' },
-        // },
       });
     } catch (error: any) {
       // Sequelize unique constraint error
@@ -116,10 +111,7 @@ export const listProfiles = asyncHandler(
         description: profile.description,
         created_at: profile.createdAt,
         updated_at: profile.updatedAt,
-        ...(profile.deletedAt && { deleted_at: profile.deletedAt }),
-        _links: {
-          self: { href: `/api/v1/profiles/${profile.id}` },
-        },
+        ...(profile.deletedAt && { deleted_at: profile.deletedAt })
       }));
 
       // Set pagination headers (RFC 5988)
@@ -202,13 +194,6 @@ export const getProfile = asyncHandler(
         created_at: profile.createdAt,
         updated_at: profile.updatedAt,
         roles: profile.roles || [],
-        // _links: {
-        //   self: { href: `/api/v1/profiles/${profile.id}` },
-        //   update: { href: `/api/v1/profiles/${profile.id}`, method: 'PUT' },
-        //   delete: { href: `/api/v1/profiles/${profile.id}`, method: 'DELETE' },
-        //   users: { href: `/api/v1/profiles/${profile.id}/users` },
-        //   roles: { href: `/api/v1/profiles/${profile.id}/roles` },
-        // },
       },
     });
   }

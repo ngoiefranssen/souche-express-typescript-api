@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { validate } from '../../middlewares/validation.middleware';
-import { createStatutEmploye, deleteStatutEmploye, getStatutEmploye, listStatutEmployes, updateStatuEmploye } from '../../controllers/admin/statut_employe.controller';
+import { createStatutEmploye, deleteStatutEmploye, getStatutEmploye, listStatutEmployes, updateStatuEmploye } from '../../controllers/admin/EmploymentStatus.controller';
 import { createStatuEmployeSchema, deleteStatuEmployeSchema, getStatuEmployeSchema, listStatuEmployeSchema, updatedStatuEmployeSchema } from '../../schemas/admin/statut.employe.schema';
 
 

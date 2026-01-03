@@ -6,7 +6,7 @@ import {
   getProfile,
   listProfiles,
   updateProfile,
-} from '../../controllers/admin/profile.controller';
+} from '../../controllers/admin/Profile.controller';
 import { createProfileSchema, deleteProfileSchema, getProfileSchema, listProfilesSchema, updateProfileSchema } from '../../schemas/admin/profiles.schema';
 
 const router = Router();
