@@ -47,6 +47,21 @@ export default class User extends Model {
   })
   email!: string;
 
+  @Unique
+  @AllowNull(false)
+  @Column({
+    type: DataType.STRING(100),
+    validate: {
+      isEmail: {
+        msg: 'Must be a valid username',
+      },
+      notEmpty: {
+        msg: 'Username cannot be empty',
+      },
+    },
+  })
+  username!: string;
+
   @AllowNull(false)
   @Column({
     type: DataType.STRING(255),
@@ -105,9 +120,38 @@ export default class User extends Model {
     type: DataType.STRING(254),
     field: 'profile_photo',
     validate: {
-      isUrl: {
-        msg: 'Profile photo must be a valid URL',
-      },
+      isValidPhotoUrl(value: string) {
+        // Allow null or empty values
+        if (!value || value.trim() === '') {
+          return;
+        }
+
+        const trimmedValue = value.trim();
+
+        // Check for relative paths (starts with /)
+        if (trimmedValue.startsWith('/')) {
+          // Validate it's a safe relative path (no .. or suspicious patterns)
+          if (trimmedValue.includes('..') || trimmedValue.includes('\\')) {
+            throw new Error('Profile photo path contains invalid characters');
+          }
+          return; // Valid relative path
+        }
+
+        // Check for absolute URLs
+        try {
+          const url = new URL(trimmedValue);
+          
+          // Ensure protocol is http or https
+          if (!['http:', 'https:'].includes(url.protocol)) {
+            throw new Error('Profile photo URL must use HTTP or HTTPS protocol');
+          }
+
+          // Valid URL
+          return;
+        } catch {
+          throw new Error('Profile photo must be a valid URL or relative path');
+        }
+      }
     },
   })
   profilePhoto?: string;

@@ -11,7 +11,7 @@ const mainRouter = Router();
 mainRouter.use('/dif', authRoutes);
 mainRouter.use('/users', userAllRoutes);
 mainRouter.use('/profils', profilAllRoutes);
-mainRouter.use('/statut-employe', statutEmployeAllRoutes);
+mainRouter.use('/employment-statut', statutEmployeAllRoutes);
 mainRouter.use('/roles', rolesAllRoutes);
 
 export const routesProvider = mainRouter;

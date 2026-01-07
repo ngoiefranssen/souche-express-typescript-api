@@ -1,61 +1,168 @@
 import { z } from 'zod';
+import { coerceNumber } from "../../db/config/HelperCoerce";
 
-// Schema de base commun à Create et Update
+// ==================== Schema de base commun ====================
 const userBaseSchema = z.object({
-  email: z.string().email({ message: 'Email invalide' }).optional(),
-  nom_user: z.string().min(2, { message: 'Nom : 2 caractères minimum' }),
-  prenom_user: z.string().min(2, { message: 'Prénom : 2 caractères minimum' }),
-  telephone: z.string().max(20, { message: 'Téléphone : maximum 20 caractères' }).optional().nullable(),
-  photo_profile: z.string().url({ message: 'URL de photo invalide' }).optional().nullable(),
-  salaire: z.number().min(0, { message: 'Salaire doit être positif' }).optional().nullable(),
-  date_embauche: z.string().date({ message: 'Date invalide (format YYYY-MM-DD)' }).optional().nullable(),
-  id_statut_employe: z.number().int().positive({ message: 'Statut employé invalide' }).optional().nullable(),
-  id_profil: z.number().int().positive({ message: 'Profil invalide' }).optional().nullable(), // ← NOUVEAU
+  email: z.string()
+    .min(1, { message: 'Email is required' })
+    .email({ message: 'Invalid email address' })
+    .optional(),
+
+  username: z.string()
+    .min(2, { message: 'Username must be at least 2 characters' })
+    .max(50, { message: 'Username cannot exceed 50 characters' }),
+  
+  last_name: z.string()
+    .min(2, { message: 'Last name must be at least 2 characters' })
+    .max(50, { message: 'Last name cannot exceed 50 characters' }),
+  
+  first_name: z.string()
+    .min(2, { message: 'First name must be at least 2 characters' })
+    .max(50, { message: 'First name cannot exceed 50 characters' }),
+  
+  phone: z.string()
+    .max(20, { message: 'Phone cannot exceed 20 characters' })
+    .optional()
+    .nullable()
+    .transform(val => val === '' ? null : val),
+  
+  profile_photo: z.preprocess((val) => {
+    if (val === null || val === undefined || val === '' || val === 'null') {
+      return undefined;
+    }
+    if (typeof val === 'object') {
+      return undefined;
+    }
+    return val;
+  }, z.string().url({ message: 'Profile photo must be a valid URL' }).optional().nullable()),
+  
+  // Coerce string to number for FormData
+  salary: coerceNumber
+    .refine((val) => val === undefined || val >= 0, {
+      message: 'Salary must be positive',
+    })
+    .optional()
+    .nullable(),
+  
+  hire_date: z.preprocess((val) => {
+    if (val === null || val === undefined || val === '' || val === 'null') {
+      return undefined;
+    }
+    return val;
+  }, z.string().date({ message: 'Invalid date format (YYYY-MM-DD)' }).optional().nullable()),
+  
+  employment_status_id: coerceNumber
+    .refine((val) => val === undefined || (Number.isInteger(val) && val > 0), {
+      message: 'Employment status ID must be a positive integer',
+    })
+    .optional()
+    .nullable(),
+  
+  profile_id: coerceNumber
+    .refine((val) => val === undefined || (Number.isInteger(val) && val > 0), {
+      message: 'Profile ID must be a positive integer',
+    })
+    .optional()
+    .nullable(),
 });
 
-// Schema pour l'inscription (Register) - mot de passe obligatoire
+// ==================== Schema pour l'inscription (Register) ====================
 export const registerSchema = z.object({
   body: userBaseSchema.extend({
-    email: z.string().email({ message: 'Email invalide' }),
-    password: z.string().min(8, { message: 'Mot de passe : 8 caractères minimum' }),
-    // Rendre id_profil obligatoire lors de l'inscription si besoin
-    id_profil: z.number().int().positive(),
+    email: z.string()
+      .min(1, { message: 'Email is required' })
+      .email({ message: 'Invalid email address' }),
+    
+    password: z.string()
+      .min(8, { message: 'Password must be at least 8 characters' }),
+    
+    // profile_id obligatoire lors de l'inscription
+    profile_id: z.union([
+      z.number().int().positive(),
+      z.string().transform((val) => {
+        const num = Number(val);
+        if (isNaN(num) || num <= 0 || !Number.isInteger(num)) {
+          throw new Error('Profile ID must be a positive integer');
+        }
+        return num;
+      })
+    ]),
   }),
 });
 
-
+// ==================== Schema pour la mise à jour ====================
 export const updateUserSchema = z.object({
   params: z.object({
-    id: z.string().transform((val) => parseInt(val, 10)).pipe(z.number().int().positive({ message: 'ID utilisateur invalide' })),
+    id: z.string()
+      .transform((val) => parseInt(val, 10))
+      .pipe(z.number().int().positive({ message: 'Invalid user ID' })),
   }),
   body: userBaseSchema.partial().extend({
-    password: z.string().min(8).optional(),
-  }),
+    password: z.string()
+      .min(8, { message: 'Password must be at least 8 characters' })
+      .optional(),
+  }).refine(
+    (data) => Object.keys(data).length > 0,
+    { message: 'At least one field must be provided for update' }
+  ),
 });
 
+// ==================== Schema pour récupérer un utilisateur ====================
 export const getUserSchema = z.object({
   params: z.object({
-    id: z.string().transform((val) => parseInt(val, 10)).pipe(z.number().int().positive({ message: 'ID utilisateur invalide' })),
+    id: z.string()
+      .transform((val) => parseInt(val, 10))
+      .pipe(z.number().int().positive({ message: 'Invalid user ID' })),
   }),
 });
 
+// ==================== Schema pour lister les utilisateurs ====================
 export const listUsersSchema = z.object({
   query: z.object({
-    page: z.string().transform((val) => parseInt(val, 10)).pipe(z.number().int().min(1)).optional().default(1),
-    limit: z.string().transform((val) => parseInt(val, 10)).pipe(z.number().int().min(1).max(100)).optional().default(20),
+    page: z.string()
+      .optional()
+      .default('1')
+      .transform((val) => parseInt(val, 10))
+      .pipe(z.number().int().min(1)),
+    
+    limit: z.string()
+      .optional()
+      .default('20')
+      .transform((val) => parseInt(val, 10))
+      .pipe(z.number().int().min(1).max(100)),
+    
     search: z.string().optional(),
-    statut: z.string().transform((val) => parseInt(val, 10)).pipe(z.number().int().positive()).optional(),
-    profil: z.string().transform((val) => parseInt(val, 10)).pipe(z.number().int().positive()).optional(), // ← Nouveau filtre par profil
+    
+    statut: z.string()
+      .optional()
+      .transform((val) => {
+        if (!val) return undefined;
+        const num = parseInt(val, 10);
+        return isNaN(num) ? undefined : num;
+      })
+      .pipe(z.number().int().positive().optional()),
+    
+    profil: z.string()
+      .optional()
+      .transform((val) => {
+        if (!val) return undefined;
+        const num = parseInt(val, 10);
+        return isNaN(num) ? undefined : num;
+      })
+      .pipe(z.number().int().positive().optional()),
   }),
 });
 
-// Schema pour supprimer un utilisateur (Delete)  même validation que getUser
+// ==================== Schema pour supprimer un utilisateur ====================
 export const deleteUserSchema = z.object({
   params: z.object({
-    id: z.string().transform((val) => parseInt(val, 10)).pipe(z.number().int().positive({ message: 'ID utilisateur invalide' })),
+    id: z.string()
+      .transform((val) => parseInt(val, 10))
+      .pipe(z.number().int().positive({ message: 'Invalid user ID' })),
   }),
 });
 
+// ==================== Types TypeScript ====================
 export type RegisterInput = z.infer<typeof registerSchema>['body'];
 export type UpdateUserInput = z.infer<typeof updateUserSchema>;
 export type UpdateUserParams = UpdateUserInput['params'];

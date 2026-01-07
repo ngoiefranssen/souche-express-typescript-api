@@ -10,6 +10,7 @@ import { errorHandler, notFoundHandler } from './utils/errors';
 import { routesProvider } from './routes/provider.routes';
 import { env } from './db/config/env';
 import { sequelize } from './db/sequelize';
+import { configureStaticFiles } from './middlewares/static.middleware';
 
 const app = express();
 
@@ -37,9 +38,11 @@ app.use(
     createParentPath: true,
     useTempFiles: true,
     tempFileDir: '/tmp/',
-    debug: false,
+    debug: true,
   })
 );
+
+configureStaticFiles(app);
 
 // ==================== Health check AVANT le rate limiter ====================
 app.get('/health', (_req, res) => {
