@@ -10,7 +10,7 @@ import fs from 'fs/promises';
 export interface FileUploadConfig {
   fieldName: string;
   allowedMimeTypes: string[];
-  maxSize: number; // in bytes
+  maxSize: number;
   destination: string;
 }
 
