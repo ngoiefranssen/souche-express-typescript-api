@@ -11,6 +11,7 @@ import { routesProvider } from './routes/provider.routes';
 import { env } from './db/config/env';
 import { sequelize } from './db/sequelize';
 import { configureStaticFiles } from './middlewares/static.middleware';
+import { startSessionCleanupScheduler } from './utils/sessionCleaner';
 
 const app = express();
 
@@ -65,6 +66,9 @@ const limiter = rateLimit({
 
 // ==================== Routes ====================
 app.use('/api/v1', limiter, routesProvider);
+
+// Démarrer le nettoyage automatique des sessions
+startSessionCleanupScheduler();
 
 // ==================== Gestion des erreurs ====================
 // 404 - DOIT être après toutes les routes

@@ -20,7 +20,7 @@ import EmploymentStatus from './EmploymentStatus.model';
 @Table({
   tableName: 'users',
   timestamps: true,
-  paranoid: true, // Soft delete
+  paranoid: true,
   createdAt: 'created_at',
   updatedAt: 'updated_at',
   deletedAt: 'deleted_at',
@@ -49,14 +49,21 @@ export default class User extends Model {
 
   @Unique
   @AllowNull(false)
+  @Index('idx_users_username')
   @Column({
     type: DataType.STRING(100),
     validate: {
-      isEmail: {
-        msg: 'Must be a valid username',
+      len: {
+        args: [2, 100],
+        msg: 'Username must be between 2 and 100 characters',
       },
       notEmpty: {
         msg: 'Username cannot be empty',
+      },
+      // Valider le format : lettres, chiffres, tirets et underscores seulement
+      is: {
+        args: /^[a-zA-Z0-9_-]+$/,
+        msg: 'Username can only contain letters, numbers, hyphens and underscores',
       },
     },
   })
@@ -121,32 +128,26 @@ export default class User extends Model {
     field: 'profile_photo',
     validate: {
       isValidPhotoUrl(value: string) {
-        // Allow null or empty values
         if (!value || value.trim() === '') {
           return;
         }
 
         const trimmedValue = value.trim();
 
-        // Check for relative paths (starts with /)
         if (trimmedValue.startsWith('/')) {
-          // Validate it's a safe relative path (no .. or suspicious patterns)
           if (trimmedValue.includes('..') || trimmedValue.includes('\\')) {
             throw new Error('Profile photo path contains invalid characters');
           }
-          return; // Valid relative path
+          return;
         }
 
-        // Check for absolute URLs
         try {
           const url = new URL(trimmedValue);
           
-          // Ensure protocol is http or https
           if (!['http:', 'https:'].includes(url.protocol)) {
             throw new Error('Profile photo URL must use HTTP or HTTPS protocol');
           }
 
-          // Valid URL
           return;
         } catch {
           throw new Error('Profile photo must be a valid URL or relative path');
@@ -194,24 +195,20 @@ export default class User extends Model {
   })
   profile_id?: number;
 
-  // Timestamps
   declare createdAt: Date;
   declare updatedAt: Date;
   declare deletedAt?: Date;
 
-  // Relations
   @BelongsTo(() => ProfileModel)
   profile?: ProfileModel;
 
   @BelongsTo(() => EmploymentStatus)
   employmentStatus?: EmploymentStatus;
 
-  // Methods
   async comparePassword(candidatePassword: string): Promise<boolean> {
     return bcrypt.compare(candidatePassword, this.passwordHash);
   }
 
-  // Hooks
   @BeforeCreate
   @BeforeUpdate
   static async hashPassword(user: User) {

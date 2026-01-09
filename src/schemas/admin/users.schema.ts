@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { coerceNumber } from "../../db/config/HelperCoerce";
+import { coerceNumber } from "../../db/config/helperCoerce";
 
 // ==================== Schema de base commun ====================
 const userBaseSchema = z.object({
@@ -8,9 +8,12 @@ const userBaseSchema = z.object({
     .email({ message: 'Invalid email address' })
     .optional(),
 
-  username: z.string()
+   username: z.string()
     .min(2, { message: 'Username must be at least 2 characters' })
-    .max(50, { message: 'Username cannot exceed 50 characters' }),
+    .max(100, { message: 'Username cannot exceed 100 characters' })
+    .regex(/^[a-zA-Z0-9_-]+$/, { 
+      message: 'Username can only contain letters, numbers, hyphens and underscores' 
+    }),
   
   last_name: z.string()
     .min(2, { message: 'Last name must be at least 2 characters' })
