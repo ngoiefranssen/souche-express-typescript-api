@@ -16,7 +16,8 @@ import User from './users.model';
   timestamps: false,
   underscored: false,
 })
-export default class EmploymentStatus extends Model {
+
+export default class EmploymentStatusModel extends Model {
   @PrimaryKey
   @AutoIncrement
   @Column(DataType.INTEGER)

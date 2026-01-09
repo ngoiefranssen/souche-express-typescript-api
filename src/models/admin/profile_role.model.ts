@@ -16,7 +16,7 @@ import Role from './role.model';
 @Table({
   tableName: 'profile_roles',
   timestamps: true,
-  paranoid: false, // Pas de soft delete pour les tables de liaison
+  paranoid: false,
   createdAt: 'created_at',
   updatedAt: 'updated_at',
   indexes: [
@@ -27,7 +27,8 @@ import Role from './role.model';
     },
   ],
 })
-export default class ProfileRole extends Model {
+
+export default class ProfileRoleModel extends Model {
   @PrimaryKey
   @AutoIncrement
   @Column({

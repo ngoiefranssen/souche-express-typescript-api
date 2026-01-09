@@ -21,7 +21,7 @@ import ProfileModel from './profil.model';
   deletedAt: 'deleted_at',
 })
 
-export default class Role extends Model {
+export default class RoleModel extends Model {
   @PrimaryKey
   @AutoIncrement
   @Column(DataType.INTEGER)

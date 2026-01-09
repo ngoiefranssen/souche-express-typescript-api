@@ -17,7 +17,7 @@ import User from '../admin/users.model';
   createdAt: 'created_at',
   updatedAt: 'updated_at',
 })
-export default class UserSession extends Model {
+export default class UserSessionModel extends Model {
   @PrimaryKey
   @AutoIncrement
   @Column(DataType.INTEGER)

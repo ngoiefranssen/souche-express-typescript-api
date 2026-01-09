@@ -25,7 +25,7 @@ import EmploymentStatus from './employment_status.model';
   updatedAt: 'updated_at',
   deletedAt: 'deleted_at',
 })
-export default class User extends Model {
+export default class UserModel extends Model {
   @PrimaryKey
   @AutoIncrement
   @Column(DataType.INTEGER)
@@ -211,7 +211,7 @@ export default class User extends Model {
 
   @BeforeCreate
   @BeforeUpdate
-  static async hashPassword(user: User) {
+  static async hashPassword(user: UserModel) {
     if (user.changed('passwordHash')) {
       const salt = await bcrypt.genSalt(12);
       user.passwordHash = await bcrypt.hash(user.passwordHash, salt);

@@ -23,7 +23,8 @@ import User from './users.model';
   updatedAt: 'updated_at',
   deletedAt: 'deleted_at',
 })
-export default class Profile extends Model {
+
+export default class ProfileModel extends Model {
   @PrimaryKey
   @AutoIncrement
   @Column(DataType.INTEGER)
