@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { coerceNumber } from "../../db/config/helperCoerce";
+import { coerceNumber } from "../../db/config/helper_coerce.config";
 
 // ==================== Schema de base commun ====================
 const userBaseSchema = z.object({

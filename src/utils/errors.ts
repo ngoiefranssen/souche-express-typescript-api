@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { env } from '../db/config/env';
+import { env } from '../db/config/env.config';
 
 // ==================== Classes d'erreurs personnalisées ====================
 export class AppError extends Error {

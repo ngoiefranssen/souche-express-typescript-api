@@ -1,4 +1,4 @@
-import { FileUploadConfig } from "../../utils/formDataParser";
+import { FileUploadConfig } from "../../utils/form_data_parser";
 
 export const UPLOAD_CONFIGS = {
   PROFILE_PHOTO: {

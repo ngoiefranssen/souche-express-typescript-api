@@ -5,7 +5,7 @@ import {
   listUsers,
   updateUser,
   deleteUser,
-} from '../../controllers/admin/Users.controller';
+} from '../../controllers/admin/users.controller';
 import {deleteUserSchema, getUserSchema, listUsersSchema, registerSchema, updateUserSchema } from '../../schemas/admin/users.schema';
 import { validate } from '../../middlewares/validation.middleware';
 

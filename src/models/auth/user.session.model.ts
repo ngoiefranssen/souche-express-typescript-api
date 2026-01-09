@@ -9,7 +9,7 @@ import {
   BelongsTo,
   Index,
 } from 'sequelize-typescript';
-import User from '../admin/Users.model';
+import User from '../admin/users.model';
 
 @Table({
   tableName: 'user_sessions',

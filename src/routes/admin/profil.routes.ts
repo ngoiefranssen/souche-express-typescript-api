@@ -6,7 +6,7 @@ import {
   getProfile,
   listProfiles,
   updateProfile,
-} from '../../controllers/admin/Profile.controller';
+} from '../../controllers/admin/profile.controller';
 import { createProfileSchema, deleteProfileSchema, getProfileSchema, listProfilesSchema, updateProfileSchema } from '../../schemas/admin/profiles.schema';
 import { authenticateToken } from '../../middlewares/auth.middleware';
 

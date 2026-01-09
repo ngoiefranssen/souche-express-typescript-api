@@ -17,9 +17,9 @@ import {
   GetProfileInput,
   DeleteProfileInput,
 } from '../../schemas/admin/profiles.schema';
-import Profile from '../../models/admin/Profil.model';
-import Role from '../../models/admin/Role.model';
-import User from '../../models/admin/Users.model';
+import Profile from '../../models/admin/profil.model';
+import Role from '../../models/admin/role.model';
+import User from '../../models/admin/users.model';
 
 // ==================== CREATE PROFILE ====================
 export const createProfile = asyncHandler(

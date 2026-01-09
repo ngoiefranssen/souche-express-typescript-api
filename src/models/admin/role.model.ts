@@ -9,8 +9,8 @@ import {
   AllowNull,
   BelongsToMany,
 } from 'sequelize-typescript';
-import ProfileRole from './ProfileRole.model';
-import ProfileModel from './Profil.model';
+import ProfileRole from './profile_role.model';
+import ProfileModel from './profil.model';
 
 @Table({
   tableName: 'roles',

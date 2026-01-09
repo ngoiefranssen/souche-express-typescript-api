@@ -10,9 +10,9 @@ import {
   HasMany,
   BelongsToMany,
 } from 'sequelize-typescript';
-import Role from './Role.model';
-import ProfileRole from './ProfileRole.model';
-import User from './Users.model';
+import Role from './role.model';
+import ProfileRole from './profile_role.model';
+import User from './users.model';
 
 @Table({
   tableName: 'profiles',

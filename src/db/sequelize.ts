@@ -1,7 +1,7 @@
 import { Sequelize } from 'sequelize-typescript';
 import { globSync } from 'glob';
 import path from 'path';
-import { env } from './config/env';
+import { env } from './config/env.config';
 
 export const sequelize = new Sequelize({
   dialect: 'postgres',

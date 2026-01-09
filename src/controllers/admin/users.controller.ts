@@ -16,12 +16,12 @@ import {
   ListUsersInput,
   DeleteUserInput
 } from '../../schemas/admin/users.schema';
-import { processFileUpload } from '../../utils/formDataParser';
+import { processFileUpload } from '../../utils/form_data_parser';
 import { UPLOAD_CONFIGS } from '../../db/config/upload.config';
-import Role from '../../models/admin/Role.model';
-import User from '../../models/admin/Users.model';
-import Profile from '../../models/admin/Profil.model';
-import EmploymentStatus from '../../models/admin/EmploymentStatus.model';
+import Role from '../../models/admin/role.model';
+import User from '../../models/admin/users.model';
+import Profile from '../../models/admin/profil.model';
+import EmploymentStatus from '../../models/admin/employment_status.model';
 
 
 /**

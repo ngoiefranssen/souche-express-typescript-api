@@ -9,26 +9,26 @@ import {
 } from '../../utils/errors';
 import { ValidatedRequest } from '../../middlewares/validation.middleware';
 import { 
-  createStatuEmployeInput, 
-  DeleteStatuEmployeInput, 
-  GetStatuEmployeInput, 
-  ListStatuEmployeInput 
-} from '../../schemas/admin/statut.employe.schema';
-import EmploymentStatus from '../../models/admin/EmploymentStatus.model';
-import User from '../../models/admin/Users.model';
+  CreateRoleInput, 
+  DeleteRoleInput, 
+  GetRoleInput, 
+  ListRolesInput 
+} from '../../schemas/admin/roles.schema';
+import Role from '../../models/admin/role.model';
+import ProfileRole from '../../models/admin/profile_role.model';
 
 /**
- * @route
- * @desc    Create a new employment status
+ * @route   
+ * @desc    Create a new role
  * @access  Private/Admin
  */
-export const createStatutEmploye = asyncHandler(
+export const createRole = asyncHandler(
   async (req: Request, res: Response, _next: NextFunction): Promise<void> => {
-    const { label, description }: createStatuEmployeInput = (req as ValidatedRequest).validated?.body;
+    const { label, description }: CreateRoleInput = (req as ValidatedRequest).validated.body;
 
     try {
-      // Check if employment status already exists (case-insensitive)
-      const existingStatus = await EmploymentStatus.findOne({
+      // Check if role already exists (case-insensitive)
+      const existingRole = await Role.findOne({
         where: {
           label: {
             [Op.iLike]: label.trim()
@@ -36,23 +36,25 @@ export const createStatutEmploye = asyncHandler(
         }
       });
 
-      if (existingStatus) {
-        throw new ConflictError('An employment status with this label already exists');
+      if (existingRole) {
+        throw new ConflictError('A role with this label already exists');
       }
 
-      // Create new employment status
-      const status = await EmploymentStatus.create({
+      // Create new role
+      const role = await Role.create({
         label: label.trim(),
         description: description?.trim() || null,
       });
 
       res.status(201).json({
         status: 'success',
-        message: 'Employment status created successfully',
+        message: 'Role created successfully',
         data: {
-          id: status.id,
-          label: status.label,
-          description: status.description,
+          id: role.id,
+          label: role.label,
+          description: role.description,
+          created_at: role.createdAt,
+          updated_at: role.updatedAt,
         },
       });
     } catch (error: any) {
@@ -61,24 +63,24 @@ export const createStatutEmploye = asyncHandler(
       }
 
       if (error.name === 'SequelizeUniqueConstraintError') {
-        throw new ConflictError('An employment status with this label already exists');
+        throw new ConflictError('A role with this label already exists');
       }
 
       if (error instanceof SequelizeValidationError) {
         throw new ValidationError(error.errors[0]?.message || 'Validation error');
       }
 
-      throw new DatabaseError(`Failed to create employment status: ${error.message}`);
+      throw new DatabaseError(`Failed to create role: ${error.message}`);
     }
   }
 );
 
 /**
- * @route
- * @desc    Get paginated list of employment statuses with optional search and sorting
+ * @route   
+ * @desc    Get paginated list of roles with optional search and sorting
  * @access  Private/Admin
  */
-export const listStatutEmployes = asyncHandler(
+export const listRoles = asyncHandler(
   async (req: Request, res: Response, _next: NextFunction): Promise<void> => {
     const validatedReq = req as ValidatedRequest;
     const queryData = validatedReq.validated?.query || req?.query;
@@ -89,7 +91,7 @@ export const listStatutEmployes = asyncHandler(
       search,
       orderBy = 'label',
       order = 'DESC',
-    } = queryData as ListStatuEmployeInput;
+    } = queryData as ListRolesInput;
 
     // Pagination validation and sanitization
     const pageNum = Math.max(1, parseInt(String(page), 10) || 1);
@@ -101,6 +103,8 @@ export const listStatutEmployes = asyncHandler(
       'label': 'label',
       'description': 'description',
       'id': 'id',
+      'created_at': 'created_at',
+      'updated_at': 'updated_at',
     };
 
     const orderByField = fieldMapping[orderBy] || 'label';
@@ -119,12 +123,12 @@ export const listStatutEmployes = asyncHandler(
 
     try {
       // Execute query with count
-      const { count, rows } = await EmploymentStatus.findAndCountAll({
+      const { count, rows } = await Role.findAndCountAll({
         where: whereClause,
         limit: limitNum,
         offset: offset,
         order: [[orderByField, orderDirection]],
-        attributes: ['id', 'label', 'description'],
+        attributes: ['id', 'label', 'description', 'created_at', 'updated_at'],
       });
 
       const totalPages = Math.ceil(count / limitNum);
@@ -137,16 +141,18 @@ export const listStatutEmployes = asyncHandler(
       }
 
       // Format response data
-      const statuses = rows.map(status => ({
-        id: status.id,
-        label: status.label,
-        description: status.description,
+      const roles = rows.map(role => ({
+        id: role.id,
+        label: role.label,
+        description: role.description,
+        created_at: role.createdAt,
+        updated_at: role.updatedAt,
       }));
 
       // Return standardized response
       res.status(200).json({
         status: 'success',
-        data: statuses,
+        data: roles,
         pagination: {
           page: pageNum,
           limit: limitNum,
@@ -164,7 +170,7 @@ export const listStatutEmployes = asyncHandler(
     } catch (err: any) {
       if (err instanceof ValidationError) throw err;
       throw new DatabaseError(
-        `Failed to retrieve employment statuses list: ${err.message}`
+        `Failed to retrieve roles list: ${err.message}`
       );
     }
   }
@@ -172,60 +178,62 @@ export const listStatutEmployes = asyncHandler(
 
 /**
  * @route
- * @desc    Get a single employment status by ID
+ * @desc    Get a single role by ID
  * @access  Private/Admin
  */
-export const getStatutEmploye = asyncHandler(
+export const getRole = asyncHandler(
   async (req: Request, res: Response, _next: NextFunction): Promise<void> => {
-    const { id }: GetStatuEmployeInput = (req as ValidatedRequest).validated?.params;
+    const { id }: GetRoleInput = (req as ValidatedRequest).validated?.params;
 
     try {
-      const status = await EmploymentStatus.findByPk(id, {
-        attributes: ['id', 'label', 'description'],
+      const role = await Role.findByPk(id, {
+        attributes: ['id', 'label', 'description', 'created_at', 'updated_at'],
       });
 
-      if (!status) {
-        throw new NotFoundError('Employment status not found');
+      if (!role) {
+        throw new NotFoundError('Role not found');
       }
 
       res.status(200).json({
         status: 'success',
         data: {
-          id: status.id,
-          label: status.label,
-          description: status.description,
+          id: role.id,
+          label: role.label,
+          description: role.description,
+          created_at: role.createdAt,
+          updated_at: role.updatedAt,
         },
       });
     } catch (error: any) {
       if (error instanceof NotFoundError) {
         throw error;
       }
-      throw new DatabaseError(`Failed to retrieve employment status: ${error.message}`);
+      throw new DatabaseError(`Failed to retrieve role: ${error.message}`);
     }
   }
 );
 
 /**
  * @route
- * @desc    Update an employment status by ID
+ * @desc    Update a role by ID
  * @access  Private/Admin
  */
-export const updateStatuEmploye = asyncHandler(
+export const updateRole = asyncHandler(
   async (req: Request, res: Response, _next: NextFunction): Promise<void> => {
-    const { id } = (req as ValidatedRequest).validated.params;
-    const { label, description } = (req as ValidatedRequest).validated.body;
+    const { id } = (req as ValidatedRequest).validated?.params;
+    const { label, description } = (req as ValidatedRequest).validated?.body;
 
     try {
-      // Find employment status by primary key
-      const status = await EmploymentStatus.findByPk(id);
+      // Find role by primary key
+      const role = await Role.findByPk(id);
 
-      if (!status) {
-        throw new NotFoundError('Employment status not found');
+      if (!role) {
+        throw new NotFoundError('Role not found');
       }
 
       // Check for duplicate label if label is being updated
       if (label) {
-        const duplicateStatus = await EmploymentStatus.findOne({
+        const duplicateRole = await Role.findOne({
           where: {
             label: {
               [Op.iLike]: label.trim()
@@ -236,8 +244,8 @@ export const updateStatuEmploye = asyncHandler(
           }
         });
 
-        if (duplicateStatus) {
-          throw new ConflictError('An employment status with this label already exists');
+        if (duplicateRole) {
+          throw new ConflictError('A role with this label already exists');
         }
       }
 
@@ -253,16 +261,18 @@ export const updateStatuEmploye = asyncHandler(
       }
 
       // Perform update
-      await status.update(updateData);
+      await role.update(updateData);
 
-      // Return updated employment status
+      // Return updated role
       res.status(200).json({
         status: 'success',
-        message: 'Employment status updated successfully',
+        message: 'Role updated successfully',
         data: {
-          id: status.id,
-          label: status.label,
-          description: status.description,
+          id: role.id,
+          label: role.label,
+          description: role.description,
+          created_at: role.createdAt,
+          updated_at: role.updatedAt,
         },
       });
     } catch (error: any) {
@@ -271,52 +281,52 @@ export const updateStatuEmploye = asyncHandler(
       }
 
       if (error.name === 'SequelizeUniqueConstraintError') {
-        throw new ConflictError('An employment status with this label already exists');
+        throw new ConflictError('A role with this label already exists');
       }
 
       if (error instanceof SequelizeValidationError) {
         throw new ValidationError(error.errors[0]?.message || 'Validation error');
       }
 
-      throw new DatabaseError(`Failed to update employment status: ${error.message}`);
+      throw new DatabaseError(`Failed to update role: ${error.message}`);
     }
   }
 );
 
 /**
  * @route
- * @desc    Delete an employment status by ID
+ * @desc    Delete a role by ID (soft delete)
  * @access  Private/Admin
  */
-export const deleteStatutEmploye = asyncHandler(
+export const deleteRole = asyncHandler(
   async (req: Request, res: Response, _next: NextFunction): Promise<void> => {
-    const { id }: DeleteStatuEmployeInput = (req as ValidatedRequest).validated.params;
+    const { id }: DeleteRoleInput = (req as ValidatedRequest).validated.params;
 
     try {
-      // Find employment status by primary key
-      const status = await EmploymentStatus.findByPk(id);
+      // Find role by primary key
+      const role = await Role.findByPk(id);
 
-      if (!status) {
-        throw new NotFoundError('Employment status not found');
+      if (!role) {
+        throw new NotFoundError('Role not found');
       }
 
-      // Check if employment status is in use by users
-      const usageCount = await User.count({
-        where: { employmentStatusId: id }
+      // Check if role is in use by profiles
+      const usageCount = await ProfileRole.count({
+        where: { roleId: id }
       });
 
       if (usageCount > 0) {
         throw new ConflictError(
-          'Cannot delete this employment status because it is assigned to one or more users'
+          'Cannot delete this role because it is assigned to one or more profiles'
         );
       }
 
-      // Perform hard delete (no paranoid mode in this model)
-      await status.destroy();
+      // Perform soft delete (sets deletedAt timestamp)
+      await role.destroy();
 
       res.status(200).json({
         status: 'success',
-        message: 'Employment status deleted successfully',
+        message: 'Role deleted successfully',
       });
     } catch (error: any) {
       if (error instanceof NotFoundError || error instanceof ConflictError) {
@@ -325,11 +335,11 @@ export const deleteStatutEmploye = asyncHandler(
 
       if (error.name === 'SequelizeForeignKeyConstraintError') {
         throw new ConflictError(
-          'Cannot delete this employment status because it is referenced by other data'
+          'Cannot delete this role because it is referenced by other data'
         );
       }
 
-      throw new DatabaseError(`Failed to delete employment status: ${error.message}`);
+      throw new DatabaseError(`Failed to delete role: ${error.message}`);
     }
   }
 );

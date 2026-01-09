@@ -14,8 +14,8 @@ import {
   BeforeUpdate,
 } from 'sequelize-typescript';
 import bcrypt from 'bcrypt';
-import ProfileModel from './Profil.model';
-import EmploymentStatus from './EmploymentStatus.model';
+import ProfileModel from './profil.model';
+import EmploymentStatus from './employment_status.model';
 
 @Table({
   tableName: 'users',

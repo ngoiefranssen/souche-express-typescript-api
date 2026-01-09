@@ -2,7 +2,7 @@ import { Router } from 'express';
 import authRoutes from './auth/auth.routes';
 import userAllRoutes from './admin/users.routes';
 import profilAllRoutes from './admin/profil.routes';
-import statutEmployeAllRoutes from './admin/statut.employe.routes';
+import statutEmployeAllRoutes from './admin/statut_employe.routes';
 import rolesAllRoutes from './admin/role.routes';
 
 const mainRouter = Router();

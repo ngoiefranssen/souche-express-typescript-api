@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { validate } from '../../middlewares/validation.middleware';
-import { createStatutEmploye, deleteStatutEmploye, getStatutEmploye, listStatutEmployes, updateStatuEmploye } from '../../controllers/admin/EmploymentStatus.controller';
-import { createStatuEmployeSchema, deleteStatuEmployeSchema, getStatuEmployeSchema, listStatuEmployeSchema, updatedStatuEmployeSchema } from '../../schemas/admin/statut.employe.schema';
+import { createStatutEmploye, deleteStatutEmploye, getStatutEmploye, listStatutEmployes, updateStatuEmploye } from '../../controllers/admin/employment_status.controller';
+import { createStatuEmployeSchema, deleteStatuEmployeSchema, getStatuEmployeSchema, listStatuEmployeSchema, updatedStatuEmployeSchema } from '../../schemas/admin/statut_employe.schema';
 
 
 const router = Router();

@@ -10,8 +10,8 @@ import {
   BelongsTo,
   Index,
 } from 'sequelize-typescript';
-import ProfileModel from './Profil.model';
-import Role from './Role.model';
+import ProfileModel from './profil.model';
+import Role from './role.model';
 
 @Table({
   tableName: 'profile_roles',

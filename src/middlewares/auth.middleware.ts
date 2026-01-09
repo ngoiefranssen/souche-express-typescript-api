@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { env } from '../db/config/env';
+import { env } from '../db/config/env.config';
 import { AppError } from '../utils/errors';
 import UserSession from '../models/auth/user.session.model';
 

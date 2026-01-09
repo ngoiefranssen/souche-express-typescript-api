@@ -9,7 +9,7 @@ import {
   AllowNull,
   HasMany,
 } from 'sequelize-typescript';
-import User from './Users.model';
+import User from './users.model';
 
 @Table({
   tableName: 'employment_statuses',

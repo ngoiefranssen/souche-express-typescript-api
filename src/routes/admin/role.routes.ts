@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { validate } from '../../middlewares/validation.middleware';
 import { createRoleSchema, deleteRoleSchema, getRoleSchema, listRoleSchema, updateRoleSchema } from '../../schemas/admin/roles.schema';
-import { createRole, deleteRole, getRole, listRoles, updateRole } from '../../controllers/admin/Role.controller';
+import { createRole, deleteRole, getRole, listRoles, updateRole } from '../../controllers/admin/role.controller';
 
 
 const router = Router();

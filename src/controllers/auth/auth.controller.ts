@@ -1,10 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt, { SignOptions } from 'jsonwebtoken';
 import { LoginInput } from '../../schemas/auth/auth.schema';
-import { env } from '../../db/config/env';
+import { env } from '../../db/config/env.config';
 import { AppError } from '../../utils/errors';
 import { AuthRequest } from '../../middlewares/auth.middleware';
-import User from '../../models/admin/Users.model';
+import User from '../../models/admin/users.model';
 import UserSession from '../../models/auth/user.session.model';
 import { Op } from 'sequelize';
 

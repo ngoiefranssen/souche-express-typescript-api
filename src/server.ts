@@ -8,10 +8,10 @@ import morgan from 'morgan';
 import fileUpload from 'express-fileupload';
 import { errorHandler, notFoundHandler } from './utils/errors';
 import { routesProvider } from './routes/provider.routes';
-import { env } from './db/config/env';
+import { env } from './db/config/env.config';
 import { sequelize } from './db/sequelize';
 import { configureStaticFiles } from './middlewares/static.middleware';
-import { startSessionCleanupScheduler } from './utils/sessionCleaner';
+import { startSessionCleanupScheduler } from './utils/session_cleaner';
 
 const app = express();
 
