@@ -7,19 +7,18 @@ export const cleanExpiredSessions = async () => {
     const now = new Date();
     const inactivityLimit = new Date(now.getTime() - 60 * 60 * 1000); // 1 heure
 
-    const result = await UserSession.update(
+    await UserSession.update(
       { isActive: false },
       {
         where: {
           isActive: true,
           lastActivity: {
-            [Op.lt]: inactivityLimit,
+            [Op?.lt]: inactivityLimit,
           },
         },
       }
     );
 
-    console.log(`${result[0]} session(s) expirée(s) nettoyée(s) - ${new Date().toISOString()}`);
   } catch (error) {
     console.error('Erreur lors du nettoyage des sessions:', error);
   }
@@ -36,5 +35,4 @@ export const startSessionCleanupScheduler = () => {
   // Exécuter immédiatement au démarrage
   cleanExpiredSessions();
 
-  console.log('Planificateur de nettoyage des sessions démarré (cron: */15 * * * *)');
 };

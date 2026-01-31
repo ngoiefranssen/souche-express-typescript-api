@@ -6,6 +6,7 @@ import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import morgan from 'morgan';
 import fileUpload from 'express-fileupload';
+import session from 'express-session';
 import { errorHandler, notFoundHandler } from './utils/errors';
 import { routesProvider } from './routes/provider.routes';
 import { env } from './db/config/env.config';
@@ -15,15 +16,75 @@ import { startSessionCleanupScheduler } from './utils/session_cleaner';
 
 const app = express();
 
-// ==================== Sécurité ====================
-app.use(helmet());
+// ==================== Session AVANT tout (CRITIQUE) ====================
+app.use(session({
+  secret: process.env.SESSION_SECRET!,
+  resave: false,
+  saveUninitialized: false,
+  cookie: { 
+    secure: env.NODE_ENV === 'production',
+    httpOnly: true,
+    sameSite: env.NODE_ENV === 'production' ? 'none' : 'lax',
+    maxAge: 24 * 60 * 60 * 1000,
+    domain: env.NODE_ENV === 'development' ? 'localhost' : undefined
+  },
+  name: 'sessionId'
+}));
+
+// ==================== CORS Configuration ====================
+const allowedOrigins = env.NODE_ENV === 'production' 
+  ? ['https://namedomaine.com'] 
+  : ['http://localhost:3000', 'http://localhost:3001', 'http://127.0.0.1:3000'];
 
 app.use(
   cors({
-    origin: env.NODE_ENV === 'production' ? 'https://namedomaine.com' : '*',
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
+    exposedHeaders: ['Set-Cookie'],
+    preflightContinue: false,
+    optionsSuccessStatus: 204
   })
 );
+
+// Handle preflight requests explicitly
+app.options('*', cors());
+
+// ==================== Debug Middleware (TEMPORARY - Remove after fixing) ====================
+app.use((_req, _res, next) => {
+  next();
+});
+
+// ==================== Sécurité ====================
+// Configuration différente selon l'environnement
+if (env.NODE_ENV === 'production') {
+  app.use(helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        connectSrc: ["'self'", "https://namedomaine.com"],
+      },
+    },
+  }));
+} else {
+  // Development: Désactiver toutes les protections problématiques
+  app.use(helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    contentSecurityPolicy: false,
+    crossOriginOpenerPolicy: false,
+    crossOriginEmbedderPolicy: false,
+  }));
+}
 
 // ==================== Middlewares généraux ====================
 app.use(compression());
@@ -39,7 +100,7 @@ app.use(
     createParentPath: true,
     useTempFiles: true,
     tempFileDir: '/tmp/',
-    debug: true,
+    debug: env.NODE_ENV === 'development',
   })
 );
 
@@ -62,36 +123,33 @@ const limiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: 'Trop de requêtes depuis cette IP, veuillez réessayer plus tard.',
+  skip: (req) => req.path === '/health',
 });
 
 // ==================== Routes ====================
 app.use('/api/v1', limiter, routesProvider);
 
-// Démarrer le nettoyage automatique des sessions
-startSessionCleanupScheduler();
-
 // ==================== Gestion des erreurs ====================
-// 404 - DOIT être après toutes les routes
 app.use(notFoundHandler);
-
-// Gestionnaire d'erreurs global - TOUJOURS EN DERNIER
 app.use(errorHandler);
 
 // ==================== Démarrage du serveur ====================
 const startServer = async (): Promise<void> => {
   try {
     await sequelize.authenticate();
-
-    // Synchroniser les modèles (uniquement en développement)
     if (env.NODE_ENV === 'development') {
       await sequelize.sync({ alter: false });
     }
+    
+    startSessionCleanupScheduler();
 
-    // Démarrer le serveur
     const port = env.PORT || 7700;
 
     app.listen(port, () => {
       console.log(`\n Serveur démarré sur http://localhost:${port}`);
+      if (env.NODE_ENV === 'development') {
+        allowedOrigins.forEach(origin => console.log(`   - ${origin}`));
+      }
     });
 
   } catch (error) {

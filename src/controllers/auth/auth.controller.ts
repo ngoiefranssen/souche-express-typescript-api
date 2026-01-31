@@ -8,7 +8,7 @@ import User from '../../models/admin/users.model';
 import UserSession from '../../models/auth/user.session.model';
 import { Op } from 'sequelize';
 
-export const login = async (
+export const oauthAuthorize = async (
   req: Request<{}, {}, LoginInput>,
   res: Response,
   next: NextFunction
@@ -85,7 +85,7 @@ export const login = async (
   }
 };
 
-export const logout = async (
+export const oauthLogout = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
@@ -134,8 +134,43 @@ export const cleanExpiredSessions = async () => {
       }
     );
 
-    console.log('Sessions expirées nettoyées');
   } catch (error) {
     console.error('Erreur lors du nettoyage des sessions:', error);
   }
 };
+
+// // Démarrer le nettoyage automatique des sessions toutes les heures
+// export const audit = async (
+//   req: Request<{}, {}, { email?: string; success: boolean; ip?: string }>,
+//   res: Response,
+//   next: NextFunction
+// ) => {
+//   try {
+//     /* ---------- Validation mini ---------- */
+//     const { email, success, ip } = req.body;
+//     if (typeof success !== 'boolean') {
+//       throw new AppError(400, 'Champ "success" manquant ou invalide');
+//     }
+
+//     /* ---------- CSRF simple (double-submit) ---------- */
+//     const headerToken = req.headers['x-csrf-token'];
+//     const cookieToken = req.cookies?.['csrf-token'];
+//     if (!headerToken || headerToken !== cookieToken) {
+//       throw new AppError(403, 'Jeton CSRF invalide');
+//     }
+
+//     /* ---------- Log sécurisé (sans PII clair) ---------- */
+//     const log = await AuditLog.create({
+//       event:   'login_attempt',
+//       success,
+//       emailHash: email ? crypto.createHash('sha256').update(email + env.PII_HASH_SALT).digest('hex') : null,
+//       ipHash:    ip    ? crypto.createHash('sha256').update(ip    + env.PII_HASH_SALT).digest('hex') : null,
+//       userAgent: req.headers['user-agent']?.slice(0, 255),
+//       createdAt: new Date(),
+//     });
+
+//     res.json({ status: 'success', message: 'Audit enregistré' });
+//   } catch (err) {
+//     next(err);
+//   }
+// };
