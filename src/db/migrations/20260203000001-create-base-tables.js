@@ -104,7 +104,6 @@ module.exports = {
         allowNull: true,
       },
     });
-    console.log('✅ Table "roles" créée');
 
     // 4. Table users
     await queryInterface.createTable('users', {
@@ -201,10 +200,9 @@ module.exports = {
       try {
         await queryInterface.addIndex('users', index.columns, { name: index.name });
       } catch (error) {
-        console.log(`  ↻ Index ${index.name} existe déjà, ignoré`);
+        console.log(`Index ${index.name} existe déjà, ignoré`);
       }
     }
-    console.log('✅ Table "users" créée');
 
     // 5. Table profile_roles (liaison many-to-many)
     await queryInterface.createTable('profile_roles', {
@@ -259,8 +257,6 @@ module.exports = {
     await queryInterface.addIndex('profile_roles', ['role_id'], {
       name: 'idx_profile_roles_role_id',
     });
-
-    console.log('✅ Table "profile_roles" créée');
 
     // 6. Table user_sessions
     await queryInterface.createTable('user_sessions', {
@@ -327,10 +323,9 @@ module.exports = {
       try {
         await queryInterface.addIndex('user_sessions', index.columns, { name: index.name });
       } catch (error) {
-        console.log(`  ↻ Index ${index.name} existe déjà, ignoré`);
+        console.log(`Index ${index.name} existe déjà, ignoré`);
       }
     }
-    console.log('✅ Table "user_sessions" créée');
 
     // 7. Table audit_logs (si elle n'existe pas)
     const tables = await queryInterface.showAllTables();
@@ -370,12 +365,12 @@ module.exports = {
           field: 'created_at',
         },
       });
-      console.log('✅ Table "audit_logs" créée');
+      console.log('Table "audit_logs" créée');
     } else {
-      console.log('↻ Table "audit_logs" existe déjà');
+      console.log('Table "audit_logs" existe déjà');
     }
 
-    console.log('\n✅ Toutes les tables de base ont été créées avec succès !');
+    console.log('\n Toutes les tables de base ont été créées avec succès !');
   },
 
   /**
@@ -393,7 +388,5 @@ module.exports = {
     if (tables.includes('audit_logs')) {
       await queryInterface.dropTable('audit_logs');
     }
-
-    console.log('✅ Toutes les tables de base ont été supprimées');
   },
 };

@@ -85,7 +85,7 @@ module.exports = {
         });
       } catch (error) {
         // Index existe déjà, ignorer l'erreur
-        console.log(`  Index ${index.name} existe déjà, ignoré`);
+        console.log(`Index ${index.name} existe déjà, ignoré`);
       }
     }
 
@@ -94,7 +94,7 @@ module.exports = {
       COMMENT ON TABLE role_permissions IS 'Table de liaison entre rôles et permissions. Permet l''attribution granulaire des permissions aux rôles avec support ABAC personnalisé';
     `);
 
-    console.log('✅ Table "role_permissions" créée avec succès');
+    console.log('Table "role_permissions" créée avec succès');
   },
 
   /**
@@ -102,6 +102,6 @@ module.exports = {
    */
   async down(queryInterface, Sequelize) {
     await queryInterface.dropTable('role_permissions');
-    console.log('✅ Table "role_permissions" supprimée');
+    console.log('Table "role_permissions" supprimée');
   },
 };

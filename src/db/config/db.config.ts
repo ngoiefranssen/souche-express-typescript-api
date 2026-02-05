@@ -16,6 +16,6 @@ pool.on('connect', () => {
   console.log('Connexion à PostgreSQL établie');
 });
 
-pool.on('error', (err) => {
+pool.on('error', (_error: Error) => {
   process.exit(-1);
 });

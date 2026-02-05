@@ -332,13 +332,10 @@ const systemPermissions = [
  */
 async function seedPermissions() {
   try {
-    console.log('🌱 Démarrage du seed des permissions...\n');
 
     await sequelize.authenticate();
-    console.log('✅ Connexion à la base de données établie\n');
 
     // Créer ou mettre à jour les permissions
-    console.log('📝 Création/mise à jour des permissions...');
     for (const permData of systemPermissions) {
       const [permission, created] = await PermissionModel.findOrCreate({
         where: { name: permData.name },
@@ -347,16 +344,13 @@ async function seedPermissions() {
 
       if (!created) {
         await permission.update(permData);
-        console.log(`   ↻ Mise à jour: ${permData.name}`);
+        console.log(`Mise à jour: ${permData.name}`);
       } else {
-        console.log(`   ✓ Créée: ${permData.name}`);
+        console.log(`Créée: ${permData.name}`);
       }
     }
 
-    console.log(`\n✅ ${systemPermissions.length} permissions créées/mises à jour\n`);
-
     // Vérifier et créer les rôles s'ils n'existent pas
-    console.log('👥 Vérification des rôles...');
     const roles = [
       { label: 'Super Admin', description: 'Accès complet au système' },
       { label: 'Admin', description: 'Administrateur avec accès étendu' },
@@ -371,17 +365,12 @@ async function seedPermissions() {
       });
 
       if (created) {
-        console.log(`   ✓ Rôle créé: ${roleData.label}`);
+        console.log(`Rôle créé: ${roleData.label}`);
       } else {
-        console.log(`   ↻ Rôle existant: ${roleData.label}`);
+        console.log(`Rôle existant: ${roleData.label}`);
       }
     }
 
-    console.log('\n✅ Rôles vérifiés\n');
-
-    // Assigner les permissions aux rôles
-    console.log('🔗 Attribution des permissions aux rôles...');
-    
     // Super Admin - Toutes les permissions
     const superAdminRole = await RoleModel.findOne({ where: { label: 'Super Admin' } });
     if (superAdminRole) {
@@ -422,7 +411,6 @@ async function seedPermissions() {
           });
         }
       }
-      console.log(`   ✓ Admin: ${adminPermissions.length} permissions assignées`);
     }
 
     // Manager - Permissions de gestion
@@ -445,7 +433,6 @@ async function seedPermissions() {
           });
         }
       }
-      console.log(`   ✓ Manager: ${managerPermissions.length} permissions assignées`);
     }
 
     // User - Permissions de base
@@ -468,16 +455,11 @@ async function seedPermissions() {
           });
         }
       }
-      console.log(`   ✓ User: ${userPermissions.length} permissions assignées`);
     }
 
-    console.log('\n✅ Attribution des permissions terminée\n');
-    console.log('🎉 Seed des permissions terminé avec succès!\n');
-
     process.exit(0);
-  } catch (error) {
-    console.error('❌ Erreur lors du seed des permissions:', error);
-    process.exit(1);
+  } catch (_error: unknown) {
+    process.exit(-1);
   }
 }
 

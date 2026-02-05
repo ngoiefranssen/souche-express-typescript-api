@@ -90,10 +90,8 @@ module.exports = {
           defaultValue: Sequelize.NOW,
         },
       });
-
-      console.log('✅ Table refresh_tokens créée');
     } else {
-      console.log('⏭️  Table refresh_tokens existe déjà');
+      console.log('Table refresh_tokens existe déjà');
     }
 
     // Créer les index de manière idempotente
@@ -128,12 +126,11 @@ module.exports = {
             name: index.name,
             unique: index.unique || false,
           });
-          console.log(`✅ Index ${index.name} créé`);
         } else {
-          console.log(`⏭️  Index ${index.name} existe déjà`);
+          console.log(`Index ${index.name} existe déjà`);
         }
       } catch (error) {
-        console.log(`⚠️  Index ${index.name} existe déjà ou erreur:`, error.message);
+        console.log(`Index ${index.name} existe déjà ou erreur:`, error.message);
       }
     }
 
@@ -145,6 +142,6 @@ module.exports = {
 
   async down(queryInterface, Sequelize) {
     await queryInterface.dropTable('refresh_tokens');
-    console.log('✅ Table refresh_tokens supprimée');
+    console.log('Table refresh_tokens supprimée');
   },
 };

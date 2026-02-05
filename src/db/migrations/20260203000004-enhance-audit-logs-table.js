@@ -148,10 +148,9 @@ module.exports = {
         await queryInterface.addIndex('audit_logs', index.columns, {
           name: index.name,
         });
-        console.log(`  ✓ Index ${index.name} créé`);
       } catch (error) {
         // Index existe déjà, ignorer l'erreur
-        console.log(`  ↻ Index ${index.name} existe déjà, ignoré`);
+        console.log(`Index ${index.name} existe déjà, ignoré`);
       }
     }
 
@@ -159,8 +158,6 @@ module.exports = {
     await queryInterface.sequelize.query(`
       COMMENT ON TABLE audit_logs IS 'Table des logs d''audit pour la traçabilité complète. Conforme aux normes RGPD, SOC2, ISO 27001. Les adresses IP sont hashées pour la confidentialité';
     `);
-
-    console.log('✅ Table "audit_logs" enrichie avec succès');
   },
 
   /**
@@ -217,7 +214,5 @@ module.exports = {
     if (tableDescription.user_id) {
       await queryInterface.removeColumn('audit_logs', 'user_id');
     }
-
-    console.log('✅ Colonnes enrichies supprimées de "audit_logs"');
   },
 };

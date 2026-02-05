@@ -104,7 +104,7 @@ module.exports = {
         });
       } catch (error) {
         // Index existe déjà, ignorer l'erreur
-        console.log(`  Index ${index.name} existe déjà, ignoré`);
+        console.log(`Index ${index.name} existe déjà, ignoré`);
       }
     }
 
@@ -113,7 +113,7 @@ module.exports = {
       COMMENT ON TABLE permissions IS 'Table des permissions granulaires pour le système RBAC + ABAC. Conforme aux normes ISO/IEC 10181-3 et NIST SP 800-162';
     `);
 
-    console.log('✅ Table "permissions" créée avec succès');
+    console.log('Table "permissions" créée avec succès');
   },
 
   /**
@@ -121,6 +121,6 @@ module.exports = {
    */
   async down(queryInterface, Sequelize) {
     await queryInterface.dropTable('permissions');
-    console.log('✅ Table "permissions" supprimée');
+    console.log('Table "permissions" supprimée');
   },
 };

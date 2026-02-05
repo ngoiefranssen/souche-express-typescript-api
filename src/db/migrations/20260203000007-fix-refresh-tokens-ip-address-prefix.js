@@ -10,8 +10,6 @@ module.exports = {
       allowNull: true,
       comment: 'IP address hachée (format: sha256:hash) pour détecter les vols de token',
     });
-
-    console.log('✅ Colonne ip_address modifiée : VARCHAR(64) → VARCHAR(80) (support du préfixe sha256:)');
   },
 
   async down(queryInterface, Sequelize) {
@@ -20,7 +18,5 @@ module.exports = {
       allowNull: true,
       comment: 'IP address hachée (SHA-256) pour détecter les vols de token',
     });
-
-    console.log('✅ Colonne ip_address restaurée : VARCHAR(80) → VARCHAR(64)');
   },
 };

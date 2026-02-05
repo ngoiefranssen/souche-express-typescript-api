@@ -19,11 +19,9 @@ const cleanExpiredRefreshTokens = cron.schedule(
   '0 * * * *', // Chaque heure, à la minute 0
   async () => {
     try {
-      console.log('[Token Cleaner] 🧹 Démarrage du nettoyage des tokens expirés...');
-      const deletedCount = await cleanupExpiredTokens();
-      console.log(`[Token Cleaner] ✅ ${deletedCount} refresh tokens expirés supprimés`);
+      await cleanupExpiredTokens();
     } catch (error) {
-      console.error('[Token Cleaner] ❌ Erreur lors du nettoyage des tokens expirés:', error);
+      console.error('[Token Cleaner] Erreur lors du nettoyage des tokens expirés:', error);
     }
   },
   {
@@ -40,11 +38,9 @@ const cleanOldRevokedRefreshTokens = cron.schedule(
   '0 2 * * *', // Tous les jours à 2h du matin
   async () => {
     try {
-      console.log('[Token Cleaner] 🧹 Démarrage du nettoyage des vieux tokens révoqués...');
-      const deletedCount = await cleanupOldRevokedTokens();
-      console.log(`[Token Cleaner] ✅ ${deletedCount} vieux tokens révoqués supprimés`);
+      await cleanupOldRevokedTokens();
     } catch (error) {
-      console.error('[Token Cleaner] ❌ Erreur lors du nettoyage des vieux tokens:', error);
+      console.error('[Token Cleaner] Erreur lors du nettoyage des vieux tokens:', error);
     }
   },
   {
@@ -61,11 +57,9 @@ const cleanExpiredUserSessions = cron.schedule(
   '0 * * * *', // Chaque heure, à la minute 0
   async () => {
     try {
-      console.log('[Session Cleaner] 🧹 Démarrage du nettoyage des sessions expirées...');
       await cleanExpiredSessions();
-      console.log('[Session Cleaner] ✅ Sessions expirées nettoyées');
     } catch (error) {
-      console.error('[Session Cleaner] ❌ Erreur lors du nettoyage des sessions:', error);
+      console.error('[Session Cleaner] Erreur lors du nettoyage des sessions:', error);
     }
   },
   {
@@ -78,16 +72,10 @@ const cleanExpiredUserSessions = cron.schedule(
  * Démarre tous les jobs de nettoyage automatique
  */
 export function startTokenCleanupJobs(): void {
-  console.log('[Token Cleaner] 🚀 Démarrage des jobs de nettoyage automatique...');
   
   cleanExpiredRefreshTokens.start();
-  console.log('[Token Cleaner] ✅ Job de nettoyage des tokens expirés démarré (toutes les heures)');
-  
   cleanOldRevokedRefreshTokens.start();
-  console.log('[Token Cleaner] ✅ Job de nettoyage des vieux tokens révoqués démarré (tous les jours à 2h)');
-  
   cleanExpiredUserSessions.start();
-  console.log('[Token Cleaner] ✅ Job de nettoyage des sessions expirées démarré (toutes les heures)');
 }
 
 /**
@@ -97,7 +85,6 @@ export function stopTokenCleanupJobs(): void {
   cleanExpiredRefreshTokens.stop();
   cleanOldRevokedRefreshTokens.stop();
   cleanExpiredUserSessions.stop();
-  console.log('[Token Cleaner] 🛑 Tous les jobs de nettoyage automatique ont été arrêtés');
 }
 
 /**
@@ -108,16 +95,10 @@ export async function runManualCleanup(): Promise<{
   expiredTokens: number;
   oldRevokedTokens: number;
 }> {
-  console.log('[Token Cleaner] 🧹 Exécution manuelle du nettoyage complet...');
   
   const expiredTokens = await cleanupExpiredTokens();
   const oldRevokedTokens = await cleanupOldRevokedTokens();
   await cleanExpiredSessions();
-  
-  console.log(`[Token Cleaner] ✅ Nettoyage manuel terminé:
-    - ${expiredTokens} tokens expirés supprimés
-    - ${oldRevokedTokens} vieux tokens révoqués supprimés
-    - Sessions expirées nettoyées`);
   
   return { expiredTokens, oldRevokedTokens };
 }
