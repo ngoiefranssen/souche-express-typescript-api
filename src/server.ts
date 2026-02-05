@@ -13,6 +13,7 @@ import { env } from './db/config/env.config';
 import { sequelize } from './db/sequelize';
 import { configureStaticFiles } from './middlewares/static.middleware';
 import { startSessionCleanupScheduler } from './utils/session_cleaner';
+import { startTokenCleanupJobs } from './utils/token_cleaner';
 
 const app = express();
 
@@ -141,7 +142,9 @@ const startServer = async (): Promise<void> => {
       await sequelize.sync({ alter: false });
     }
     
+    // Démarrer les jobs de nettoyage automatique
     startSessionCleanupScheduler();
+    startTokenCleanupJobs();
 
     const port = env.PORT || 7700;
 

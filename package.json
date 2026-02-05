@@ -19,8 +19,14 @@
     "typecheck": "tsc --noEmit",
     "db:migrate": "sequelize-cli db:migrate",
     "db:migrate:undo": "sequelize-cli db:migrate:undo",
+    "db:migrate:undo:all": "sequelize-cli db:migrate:undo:all",
+    "db:migrate:status": "sequelize-cli db:migrate:status",
     "db:seed": "sequelize-cli db:seed:all",
-    "db:reset": "npm run db:migrate:undo:all && npm run db:migrate && npm run db:seed"
+    "db:reset": "npm run db:migrate:undo:all && npm run db:migrate && npm run db:seed",
+    "db:setup": "npm run db:migrate && npm run seed:permissions && npm run seed:admin",
+    "seed:permissions": "ts-node src/db/seeds/permissions.seed.ts",
+    "seed:admin": "ts-node src/db/seeds/admin-user.seed.ts",
+    "seed:all": "npm run seed:permissions && npm run seed:admin"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
@@ -72,6 +78,7 @@
     "eslint": "^9.39.1",
     "nodemon": "^3.1.11",
     "prettier": "^3.7.4",
+    "sequelize-cli": "^6.6.2",
     "sequelize-typescript": "^2.1.6",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3",

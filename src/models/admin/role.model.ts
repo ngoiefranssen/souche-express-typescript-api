@@ -11,6 +11,8 @@ import {
 } from 'sequelize-typescript';
 import ProfileRole from './profile_role.model';
 import ProfileModel from './profil.model';
+import PermissionModel from '../permission/permission.model';
+import RolePermission from '../permission/role_permission.model';
 
 @Table({
   tableName: 'roles',
@@ -55,4 +57,7 @@ export default class RoleModel extends Model {
   // Relations
   @BelongsToMany(() => ProfileModel, () => ProfileRole, 'roleId', 'profileId')
   profiles?: ProfileModel[];
+
+  @BelongsToMany(() => PermissionModel, () => RolePermission)
+  permissions?: PermissionModel[];
 }

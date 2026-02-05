@@ -1,12 +1,17 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt, { SignOptions } from 'jsonwebtoken';
 import { LoginInput } from '../../schemas/auth/auth.schema';
-import { env } from '../../db/config/env.config';
 import { AppError } from '../../utils/errors';
 import { AuthRequest } from '../../middlewares/auth.middleware';
 import User from '../../models/admin/users.model';
 import UserSession from '../../models/auth/user.session.model';
 import { Op } from 'sequelize';
+import {
+  generateTokenPair,
+  verifyRefreshToken,
+  generateAccessToken,
+  revokeAllUserTokens,
+} from '../../utils/jwt';
+import { logLogin, logLoginFailed, logLogout } from '../../utils/audit';
 
 export const oauthAuthorize = async (
   req: Request<{}, {}, LoginInput>,
@@ -26,6 +31,8 @@ export const oauthAuthorize = async (
     });
 
     if (!user) {
+      // Log échec de connexion
+      await logLoginFailed(email, req.ip || 'unknown', 'user_not_found');
       throw new AppError(401, 'Email ou mot de passe incorrect');
     }
 
@@ -33,27 +40,29 @@ export const oauthAuthorize = async (
     const isPasswordValid = await user.comparePassword(password);
 
     if (!isPasswordValid) {
+      // Log échec de connexion
+      await logLoginFailed(email, req.ip || 'unknown', 'invalid_password');
       throw new AppError(401, 'Email ou mot de passe incorrect');
     }
 
-    // Générer le token JWT avec expiration à 1 heure
-    const token = jwt.sign(
-      { 
-        userId: user.id, 
-        email: user.email,
-        profileId: user.profile_id 
-      },
-      env.JWT_SECRET,
-      { expiresIn: '1h' } as SignOptions
+    // Générer une paire de tokens (access + refresh)
+    const tokens = await generateTokenPair(
+      user.id,
+      user.email,
+      user.profile_id,
+      {
+        ipAddress: req.ip || req.socket.remoteAddress,
+        userAgent: req.headers['user-agent'],
+      }
     );
 
-    // Créer une session en base de données
+    // Créer une session en base de données (compatibilité avec ancien système)
     const now = new Date();
     const expiresAt = new Date(now.getTime() + 60 * 60 * 1000); // 1 heure
 
     await UserSession.create({
       userId: user.id,
-      token,
+      token: tokens.accessToken,
       lastActivity: now,
       expiresAt,
       isActive: true,
@@ -61,7 +70,10 @@ export const oauthAuthorize = async (
       userAgent: req.headers['user-agent'],
     });
 
-    // Retourner la réponse
+    // Log connexion réussie
+    await logLogin(user.id, req.ip || 'unknown', req.headers['user-agent']);
+
+    // Retourner la réponse avec les deux tokens
     res.json({
       status: 'success',
       data: {
@@ -76,9 +88,12 @@ export const oauthAuthorize = async (
           profile: user.profile,
           employmentStatus: user.employmentStatus,
         },
-        token,
-        expiresIn: '1h',
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        expiresIn: tokens.accessExpiresIn,
+        tokenType: 'Bearer',
       },
+      message: 'Connexion réussie',
     });
   } catch (error) {
     next(error);
@@ -98,6 +113,12 @@ export const oauthLogout = async (
       throw new AppError(401, 'Token manquant');
     }
 
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      throw new AppError(401, 'Utilisateur non authentifié');
+    }
+
     // Désactiver la session en base de données
     const session = await UserSession.findOne({
       where: { token, isActive: true }
@@ -107,9 +128,15 @@ export const oauthLogout = async (
       await session.update({ isActive: false });
     }
 
+    // Révoquer tous les refresh tokens de l'utilisateur
+    await revokeAllUserTokens(userId, 'logout');
+
+    // Log déconnexion
+    await logLogout(userId, req.ip || 'unknown');
+
     res.json({
       status: 'success',
-      message: 'Déconnexion réussie',
+      message: 'Déconnexion réussie. Tous vos tokens ont été révoqués.',
     });
   } catch (error) {
     next(error);
@@ -139,38 +166,147 @@ export const cleanExpiredSessions = async () => {
   }
 };
 
+/**
+ * Rafraîchir l'access token à l'aide du refresh token
+ */
+export const refreshAccessToken = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      throw new AppError(400, 'Refresh token manquant');
+    }
+
+    // Vérifier et décoder le refresh token
+    const { payload, tokenRecord } = await verifyRefreshToken(refreshToken);
+
+    // Récupérer les informations utilisateur
+    const user = await User.findByPk(payload.userId, {
+      include: [
+        { association: 'profile' },
+        { association: 'employmentStatus' }
+      ]
+    });
+
+    if (!user) {
+      throw new AppError(404, 'Utilisateur introuvable');
+    }
+
+    // Marquer le refresh token comme utilisé
+    await tokenRecord.markAsUsed();
+
+    // Générer un nouveau access token
+    const newAccessToken = generateAccessToken({
+      userId: user.id,
+      email: user.email,
+      profileId: user.profile_id,
+    });
+
+    // Mettre à jour la session si elle existe
+    const session = await UserSession.findOne({
+      where: { userId: user.id, isActive: true }
+    });
+
+    if (session) {
+      session.token = newAccessToken;
+      session.lastActivity = new Date();
+      await session.save();
+    }
+
+    // Retourner le nouveau access token
+    res.json({
+      status: 'success',
+      data: {
+        accessToken: newAccessToken,
+        expiresIn: process.env.JWT_ACCESS_EXPIRE || '1h',
+        tokenType: 'Bearer',
+      },
+      message: 'Token rafraîchi avec succès',
+    });
+  } catch (error) {
+    // Si le refresh token est invalide, demander une nouvelle connexion
+    if (error instanceof Error && error.message.includes('Refresh token')) {
+      next(new AppError(401, 'Session expirée. Veuillez vous reconnecter.'));
+    } else {
+      next(error);
+    }
+  }
+};
+
+/**
+ * Récupérer les informations de l'utilisateur connecté
+ */
+export const getCurrentUser = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      throw new AppError(401, 'Utilisateur non authentifié');
+    }
+
+    // Récupérer l'utilisateur avec toutes ses relations
+    const user = await User.findByPk(userId, {
+      include: [
+        { 
+          association: 'profile',
+          include: [
+            {
+              association: 'roles',
+              through: { attributes: [] }, // Exclure la table de liaison
+            }
+          ]
+        },
+        { association: 'employmentStatus' }
+      ],
+    });
+
+    if (!user) {
+      throw new AppError(404, 'Utilisateur introuvable');
+    }
+
+    // Retourner les informations utilisateur
+    res.json({
+      status: 'success',
+      data: {
+        user: {
+          id: user.id,
+          email: user.email,
+          username: user.username,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          phone: user.phone,
+          profilePhoto: user.profilePhoto,
+          profile: user.profile ? {
+            id: user.profile.id,
+            label: user.profile.label,
+            description: user.profile.description,
+            roles: user.profile.roles?.map(role => ({
+              id: role.id,
+              label: role.label,
+              description: role.description,
+            })) || [],
+          } : null,
+          employmentStatus: user.employmentStatus ? {
+            id: user.employmentStatus.id,
+            label: user.employmentStatus.label,
+            description: user.employmentStatus.description,
+          } : null,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+        },
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // // Démarrer le nettoyage automatique des sessions toutes les heures
-// export const audit = async (
-//   req: Request<{}, {}, { email?: string; success: boolean; ip?: string }>,
-//   res: Response,
-//   next: NextFunction
-// ) => {
-//   try {
-//     /* ---------- Validation mini ---------- */
-//     const { email, success, ip } = req.body;
-//     if (typeof success !== 'boolean') {
-//       throw new AppError(400, 'Champ "success" manquant ou invalide');
-//     }
-
-//     /* ---------- CSRF simple (double-submit) ---------- */
-//     const headerToken = req.headers['x-csrf-token'];
-//     const cookieToken = req.cookies?.['csrf-token'];
-//     if (!headerToken || headerToken !== cookieToken) {
-//       throw new AppError(403, 'Jeton CSRF invalide');
-//     }
-
-//     /* ---------- Log sécurisé (sans PII clair) ---------- */
-//     const log = await AuditLog.create({
-//       event:   'login_attempt',
-//       success,
-//       emailHash: email ? crypto.createHash('sha256').update(email + env.PII_HASH_SALT).digest('hex') : null,
-//       ipHash:    ip    ? crypto.createHash('sha256').update(ip    + env.PII_HASH_SALT).digest('hex') : null,
-//       userAgent: req.headers['user-agent']?.slice(0, 255),
-//       createdAt: new Date(),
-//     });
-
-//     res.json({ status: 'success', message: 'Audit enregistré' });
-//   } catch (err) {
-//     next(err);
-//   }
-// };

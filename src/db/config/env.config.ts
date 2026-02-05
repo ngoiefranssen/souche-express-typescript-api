@@ -15,9 +15,13 @@ const envSchema = z.object({
   DB_PASSWORD: z.string(),
   DB_NAME: z.string(),
   
-  // JWT
+  // JWT - Access Token (court pour la sécurité)
   JWT_SECRET: z.string().min(32, 'JWT_SECRET doit faire au moins 32 caractères'),
-  JWT_EXPIRE: z.string().default('2h'),
+  JWT_ACCESS_EXPIRE: z.string().default('15m'), // Token court : 15 minutes
+  
+  // JWT - Refresh Token (long pour l'UX)
+  JWT_REFRESH_SECRET: z.string().min(32, 'JWT_REFRESH_SECRET doit faire au moins 32 caractères'),
+  JWT_REFRESH_EXPIRE: z.string().default('7d'), // Refresh : 7 jours
   
   // Session
   SESSION_SECRET: z.string().min(32, 'SESSION_SECRET doit faire au moins 32 caractères'),
