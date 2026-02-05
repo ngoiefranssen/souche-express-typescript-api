@@ -13,12 +13,6 @@ export interface ValidatedRequest extends Request {
 export const validate = (schema: z.ZodObject<any>) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
-      console.log('Données reçues:', {
-        body: req.body,
-        query: req.query,
-        params: req.params,
-      });
-
       const validated = await schema.parseAsync({
         body: req.body,
         query: req.query,
