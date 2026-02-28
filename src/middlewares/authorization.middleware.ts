@@ -56,11 +56,12 @@ async function loadUserContext(userId: number): Promise<UserContext> {
           {
             model: RoleModel,
             as: 'roles',
+            through: { attributes: [] }, // Exclure les attributs de profile_roles
             include: [
               {
                 model: PermissionModel,
                 as: 'permissions',
-                through: { attributes: [] },
+                through: { attributes: [] }, // Exclure les attributs de role_permissions
               },
             ],
           },

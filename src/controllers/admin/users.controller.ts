@@ -22,6 +22,7 @@ import Role from '../../models/admin/role.model';
 import User from '../../models/admin/users.model';
 import Profile from '../../models/admin/profil.model';
 import EmploymentStatus from '../../models/admin/employment_status.model';
+import Permission from '../../models/permission/permission.model';
 
 
 /**
@@ -637,6 +638,75 @@ export const restoreUser = asyncHandler(
         throw error;
       }
       throw new DatabaseError(`Failed to restore user: ${error.message}`);
+    }
+  }
+);
+
+/**
+ * @route   GET /api/v1/users/me/permissions
+ * @desc    Get current user's permissions
+ * @access  Private
+ */
+export const getCurrentUserPermissions = asyncHandler(
+  async (req: Request, res: Response, _next: NextFunction): Promise<void> => {
+    // Get user ID from auth middleware
+    const userId = (req as any).user?.userId;
+
+    if (!userId) {
+      throw new NotFoundError('User not authenticated');
+    }
+
+    try {
+      // Load user with profile, roles, and permissions
+      const user = await User.findByPk(userId, {
+        include: [
+          {
+            model: Profile,
+            as: 'profile',
+            include: [
+              {
+                model: Role,
+                as: 'roles',
+                through: { attributes: [] },
+                include: [
+                  {
+                    model: Permission,
+                    as: 'permissions',
+                    through: { attributes: [] },
+                    attributes: ['id', 'name', 'resource', 'action', 'description'],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      });
+
+      if (!user || !user.profile) {
+        throw new NotFoundError('User or profile not found');
+      }
+
+      // Extract all unique permissions from all roles
+      const permissionsSet = new Set<string>();
+      
+      user.profile.roles?.forEach((role: any) => {
+        role.permissions?.forEach((permission: any) => {
+          permissionsSet.add(permission.name);
+        });
+      });
+
+      // Convert Set to Array
+      const permissions = Array.from(permissionsSet).sort();
+
+      res.status(200).json({
+        status: 'success',
+        data: permissions,
+      });
+    } catch (error: any) {
+      if (error instanceof NotFoundError) {
+        throw error;
+      }
+      throw new DatabaseError(`Failed to retrieve user permissions: ${error.message}`);
     }
   }
 );
