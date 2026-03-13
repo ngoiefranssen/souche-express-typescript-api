@@ -127,7 +127,17 @@ const limiter = rateLimit({
   skip: (req) => req.path === '/health',
 });
 
+// Rate limit plus permissif pour les endpoints d'authentification
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: 'Trop de tentatives de connexion, veuillez réessayer plus tard.',
+});
+
 // ==================== Routes ====================
+app.use('/api/v1/auth', authLimiter);
 app.use('/api/v1', limiter, routesProvider);
 
 // ==================== Gestion des erreurs ====================
