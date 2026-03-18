@@ -12,10 +12,13 @@ import {
   Index,
   BeforeCreate,
   BeforeUpdate,
+  BelongsToMany,
 } from 'sequelize-typescript';
 import bcrypt from 'bcrypt';
 import ProfileModel from './profil.model';
 import EmploymentStatus from './employment_status.model';
+import PermissionModel from '../permission/permission.model';
+import UserPermission from '../permission/user_permission.model';
 
 @Table({
   tableName: 'users',
@@ -204,6 +207,9 @@ export default class UserModel extends Model {
 
   @BelongsTo(() => EmploymentStatus)
   employmentStatus?: EmploymentStatus;
+
+  @BelongsToMany(() => PermissionModel, () => UserPermission, 'userId', 'permissionId')
+  directPermissions?: PermissionModel[];
 
   async comparePassword(candidatePassword: string): Promise<boolean> {
     return bcrypt.compare(candidatePassword, this.passwordHash);

@@ -61,11 +61,33 @@ export const assignPermissionSchema = z.object({
 });
 
 /**
+ * Schéma pour assigner une permission à un utilisateur
+ */
+export const assignUserPermissionSchema = z.object({
+  body: z.object({
+    userId: z.number().int().positive('L\'ID de l\'utilisateur doit être positif'),
+    permissionId: z.number().int().positive('L\'ID de la permission doit être positif'),
+    overrideConditions: z.record(z.string(), z.any()).optional(),
+    expiresAt: z.string().datetime().optional(),
+  }),
+});
+
+/**
  * Schéma pour révoquer une permission d'un rôle
  */
 export const revokePermissionSchema = z.object({
   body: z.object({
     roleId: z.number().int().positive('L\'ID du rôle doit être positif'),
+    permissionId: z.number().int().positive('L\'ID de la permission doit être positif'),
+  }),
+});
+
+/**
+ * Schéma pour révoquer une permission d'un utilisateur
+ */
+export const revokeUserPermissionSchema = z.object({
+  body: z.object({
+    userId: z.number().int().positive('L\'ID de l\'utilisateur doit être positif'),
     permissionId: z.number().int().positive('L\'ID de la permission doit être positif'),
   }),
 });
@@ -98,5 +120,14 @@ export const getPermissionByIdSchema = z.object({
 export const getRolePermissionsSchema = z.object({
   params: z.object({
     roleId: z.string().regex(/^\d+$/, 'ID de rôle invalide'),
+  }),
+});
+
+/**
+ * Schéma pour récupérer les permissions d'un utilisateur
+ */
+export const getUserPermissionsSchema = z.object({
+  params: z.object({
+    userId: z.string().regex(/^\d+$/, 'ID utilisateur invalide'),
   }),
 });

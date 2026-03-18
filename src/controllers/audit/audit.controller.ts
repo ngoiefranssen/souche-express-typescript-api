@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { AuditLog } from '../../models/audit/audit_log.model';
+import UserModel from '../../models/admin/users.model';
 import { hashIp } from '../../utils/audit';
 import { AuthRequest } from '../../middlewares/auth.middleware';
 import { Op } from 'sequelize';
@@ -84,6 +85,16 @@ export const getAuditLogs = async (
       where.action = req.query.action;
     }
 
+    // Filtrer par ressource
+    if (req.query.resource) {
+      where.resource = req.query.resource;
+    }
+
+    // Filtrer par succès/échec
+    if (typeof req.query.success === 'string') {
+      where.success = req.query.success.toLowerCase() === 'true';
+    }
+
     // Filtrer par date
     if (req.query.startDate || req.query.endDate) {
       where.created_at = {};
@@ -105,6 +116,14 @@ export const getAuditLogs = async (
       where,
       limit,
       offset,
+      include: [
+        {
+          model: UserModel,
+          as: 'user',
+          attributes: ['id', 'username', 'email'],
+          required: false,
+        },
+      ],
       order: [['created_at', 'DESC']], // Plus récents en premier
     });
 

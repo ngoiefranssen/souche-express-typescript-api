@@ -67,6 +67,11 @@ async function loadUserContext(userId: number): Promise<UserContext> {
           },
         ],
       },
+      {
+        model: PermissionModel,
+        as: 'directPermissions',
+        through: { attributes: [] }, // Exclure les attributs de user_permissions
+      },
     ],
   });
 
@@ -78,7 +83,10 @@ async function loadUserContext(userId: number): Promise<UserContext> {
   const roles = user.profile.roles?.map((role) => role.label) || [];
 
   // Extraire toutes les permissions de tous les rôles
-  const permissions = PermissionChecker.extractPermissions(user.profile.roles || []);
+  const rolePermissions = PermissionChecker.extractPermissions(user.profile.roles || []);
+  const directPermissions =
+    user.directPermissions?.map((permission) => permission.name) || [];
+  const permissions = Array.from(new Set([...rolePermissions, ...directPermissions]));
 
   // Construire le contexte
   const userContext: UserContext = {

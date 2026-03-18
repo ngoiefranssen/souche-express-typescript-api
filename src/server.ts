@@ -17,6 +17,14 @@ import { startTokenCleanupJobs } from './utils/token_cleaner';
 
 const app = express();
 
+process.on('unhandledRejection', (reason) => {
+  console.error('[Startup] Unhandled promise rejection:', reason);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('[Startup] Uncaught exception:', error);
+});
+
 // ==================== Session AVANT tout (CRITIQUE) ====================
 app.use(session({
   secret: process.env.SESSION_SECRET!,
@@ -166,6 +174,7 @@ const startServer = async (): Promise<void> => {
     });
 
   } catch (error) {
+    console.error('[Startup] Failed to start server:', error);
     process.exit(1);
   }
 };

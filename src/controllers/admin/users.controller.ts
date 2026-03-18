@@ -679,20 +679,30 @@ export const getCurrentUserPermissions = asyncHandler(
               },
             ],
           },
+          {
+            model: Permission,
+            as: 'directPermissions',
+            through: { attributes: [] },
+            attributes: ['id', 'name', 'resource', 'action', 'description'],
+          },
         ],
       });
 
-      if (!user || !user.profile) {
-        throw new NotFoundError('User or profile not found');
+      if (!user) {
+        throw new NotFoundError('User not found');
       }
 
-      // Extract all unique permissions from all roles
+      // Extract all unique permissions from roles and direct user assignments
       const permissionsSet = new Set<string>();
       
-      user.profile.roles?.forEach((role: any) => {
+      user.profile?.roles?.forEach((role: any) => {
         role.permissions?.forEach((permission: any) => {
           permissionsSet.add(permission.name);
         });
+      });
+
+      user.directPermissions?.forEach((permission: any) => {
+        permissionsSet.add(permission.name);
       });
 
       // Convert Set to Array

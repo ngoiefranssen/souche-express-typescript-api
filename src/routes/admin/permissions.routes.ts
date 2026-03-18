@@ -11,16 +11,22 @@ import {
   assignPermissionToRole,
   revokePermissionFromRole,
   getRolePermissions,
+  assignPermissionToUser,
+  revokePermissionFromUser,
+  getUserPermissions,
   getPermissionsByCategory,
 } from '../../controllers/permission/permission.controller';
 import {
   createPermissionSchema,
   updatePermissionSchema,
   assignPermissionSchema,
+  assignUserPermissionSchema,
   revokePermissionSchema,
+  revokeUserPermissionSchema,
   getPermissionsSchema,
   getPermissionByIdSchema,
   getRolePermissionsSchema,
+  getUserPermissionsSchema,
 } from '../../schemas/admin/permissions.schema';
 
 const router = Router();
@@ -135,6 +141,42 @@ router.get(
   authorize('permissions:read'),
   validate(getRolePermissionsSchema),
   getRolePermissions
+);
+
+/**
+ * GET /api/v1/permissions/user/:userId
+ * Récupère toutes les permissions directes d'un utilisateur
+ * Permission requise: permissions:read
+ */
+router.get(
+  '/user/:userId',
+  authorize('permissions:read'),
+  validate(getUserPermissionsSchema),
+  getUserPermissions
+);
+
+/**
+ * POST /api/v1/permissions/assign-user
+ * Assigne une permission directement à un utilisateur
+ * Permission requise: permissions:manage
+ */
+router.post(
+  '/assign-user',
+  authorize('permissions:manage', { audit: true }),
+  validate(assignUserPermissionSchema),
+  assignPermissionToUser
+);
+
+/**
+ * POST /api/v1/permissions/revoke-user
+ * Révoque une permission directe d'un utilisateur
+ * Permission requise: permissions:manage
+ */
+router.post(
+  '/revoke-user',
+  authorize('permissions:manage', { audit: true }),
+  validate(revokeUserPermissionSchema),
+  revokePermissionFromUser
 );
 
 export default router;

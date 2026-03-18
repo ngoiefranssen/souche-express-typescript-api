@@ -1,7 +1,9 @@
 import { Request, Response } from 'express';
 import PermissionModel from '../../models/permission/permission.model';
 import RoleModel from '../../models/admin/role.model';
+import UserModel from '../../models/admin/users.model';
 import RolePermission from '../../models/permission/role_permission.model';
+import UserPermission from '../../models/permission/user_permission.model';
 import { AppError } from '../../utils/errors';
 import { AuthorizedRequest } from '../../middlewares/authorization.middleware';
 import { logDataChange, AuditAction } from '../../utils/audit';
@@ -299,6 +301,117 @@ export const getRolePermissions = async (req: Request, res: Response) => {
       role: role.label,
       permissions: role.permissions,
     },
+  });
+};
+
+/**
+ * Récupère toutes les permissions d'un utilisateur (directes)
+ */
+export const getUserPermissions = async (req: Request, res: Response) => {
+  const { userId } = req.params;
+
+  const user = await UserModel.findByPk(userId, {
+    include: [
+      {
+        model: PermissionModel,
+        as: 'directPermissions',
+        through: {
+          attributes: ['overrideConditions', 'isActive', 'expiresAt'],
+        },
+      },
+    ],
+  });
+
+  if (!user) {
+    throw new AppError(404, 'Utilisateur non trouvé');
+  }
+
+  res.json({
+    success: true,
+    data: {
+      user: user.username,
+      permissions: user.directPermissions || [],
+    },
+  });
+};
+
+/**
+ * Assigne une permission à un utilisateur
+ */
+export const assignPermissionToUser = async (req: AuthorizedRequest, res: Response) => {
+  const { userId, permissionId } = req.body;
+  const { overrideConditions, expiresAt } = req.body;
+
+  const user = await UserModel.findByPk(userId);
+  const permission = await PermissionModel.findByPk(permissionId);
+
+  if (!user || !permission) {
+    throw new AppError(404, 'Utilisateur ou permission non trouvé');
+  }
+
+  const existing = await UserPermission.findOne({
+    where: { userId, permissionId },
+  });
+
+  if (existing) {
+    throw new AppError(400, 'Cette permission est déjà assignée à cet utilisateur');
+  }
+
+  await UserPermission.create({
+    userId,
+    permissionId,
+    overrideConditions: overrideConditions || null,
+    expiresAt: expiresAt || null,
+    isActive: true,
+  });
+
+  if (req.userContext) {
+    await logDataChange(
+      req.userContext.userId,
+      AuditAction.PERMISSION_ASSIGNED,
+      'users',
+      userId,
+      { permissionId, permissionName: permission.name },
+      req.ip
+    );
+  }
+
+  res.status(201).json({
+    success: true,
+    message: 'Permission assignée à l’utilisateur avec succès',
+  });
+};
+
+/**
+ * Révoque une permission d'un utilisateur
+ */
+export const revokePermissionFromUser = async (req: AuthorizedRequest, res: Response) => {
+  const { userId, permissionId } = req.body;
+
+  const userPermission = await UserPermission.findOne({
+    where: { userId, permissionId },
+  });
+
+  if (!userPermission) {
+    throw new AppError(404, 'Association non trouvée');
+  }
+
+  await userPermission.destroy();
+
+  if (req.userContext) {
+    await logDataChange(
+      req.userContext.userId,
+      AuditAction.PERMISSION_REVOKED,
+      'users',
+      userId,
+      { permissionId },
+      req.ip
+    );
+  }
+
+  res.json({
+    success: true,
+    message: 'Permission révoquée de l’utilisateur avec succès',
   });
 };
 

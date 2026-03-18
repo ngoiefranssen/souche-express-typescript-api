@@ -11,7 +11,9 @@ import {
   Index,
 } from 'sequelize-typescript';
 import RoleModel from '../admin/role.model';
+import UserModel from '../admin/users.model';
 import RolePermission from './role_permission.model';
+import UserPermission from './user_permission.model';
 
 /**
  * Modèle Permission - Gestion granulaire des droits d'accès
@@ -140,4 +142,7 @@ export default class PermissionModel extends Model {
   // Relations
   @BelongsToMany(() => RoleModel, () => RolePermission)
   roles?: RoleModel[];
+
+  @BelongsToMany(() => UserModel, () => UserPermission, 'permissionId', 'userId')
+  users?: UserModel[];
 }
