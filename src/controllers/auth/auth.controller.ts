@@ -32,8 +32,24 @@ export const oauthAuthorize = async (
 
     if (!user) {
       // Log échec de connexion
-      await logLoginFailed(email, req.ip || 'unknown', 'user_not_found');
+      await logLoginFailed(
+        email,
+        'user_not_found',
+        req.ip || req.socket.remoteAddress
+      );
       throw new AppError(401, 'Email ou mot de passe incorrect');
+    }
+
+    if (!user.isActive) {
+      await logLoginFailed(
+        email,
+        'user_inactive',
+        req.ip || req.socket.remoteAddress
+      );
+      throw new AppError(
+        401,
+        'Votre compte a été désactivé. Veuillez contacter un administrateur.'
+      );
     }
 
     // Vérifier le mot de passe
@@ -41,7 +57,11 @@ export const oauthAuthorize = async (
 
     if (!isPasswordValid) {
       // Log échec de connexion
-      await logLoginFailed(email, req.ip || 'unknown', 'invalid_password');
+      await logLoginFailed(
+        email,
+        'invalid_password',
+        req.ip || req.socket.remoteAddress
+      );
       throw new AppError(401, 'Email ou mot de passe incorrect');
     }
 
@@ -85,6 +105,7 @@ export const oauthAuthorize = async (
           lastName: user.lastName,
           phone: user.phone,
           profilePhoto: user.profilePhoto,
+          isActive: user.isActive,
           profile: user.profile,
           employmentStatus: user.employmentStatus,
         },
@@ -196,6 +217,19 @@ export const refreshAccessToken = async (
       throw new AppError(404, 'Utilisateur introuvable');
     }
 
+    if (!user.isActive) {
+      // Révocation immédiate des tokens pour empêcher tout nouvel accès
+      await revokeAllUserTokens(user.id, 'user_deactivated');
+      await UserSession.update(
+        { isActive: false },
+        { where: { userId: user.id, isActive: true } }
+      );
+      throw new AppError(
+        401,
+        'Votre compte est désactivé. Veuillez contacter un administrateur.'
+      );
+    }
+
     // Marquer le refresh token comme utilisé
     await tokenRecord.markAsUsed();
 
@@ -284,6 +318,7 @@ export const getCurrentUser = async (
           lastName: user.lastName,
           phone: user.phone,
           profilePhoto: user.profilePhoto,
+          isActive: user.isActive,
           profile: user.profile ? {
             id: user.profile.id,
             label: user.profile.label,

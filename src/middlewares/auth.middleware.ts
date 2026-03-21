@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { env } from '../db/config/env.config';
 import { AppError } from '../utils/errors';
 import UserSession from '../models/auth/user.session.model';
+import User from '../models/admin/users.model';
 
 interface JwtPayload {
   userId: number;
@@ -52,6 +53,23 @@ export const authenticateToken = async (
       // Désactiver la session
       await session.update({ isActive: false });
       throw new AppError(401, 'Session expirée en raison d\'inactivité');
+    }
+
+    const user = await User.findByPk(decoded.userId, {
+      attributes: ['id', 'isActive'],
+    });
+
+    if (!user) {
+      await session.update({ isActive: false });
+      throw new AppError(401, 'Utilisateur introuvable ou supprimé');
+    }
+
+    if (!user.isActive) {
+      await session.update({ isActive: false });
+      throw new AppError(
+        401,
+        'Votre compte a été désactivé. Veuillez contacter un administrateur.'
+      );
     }
 
     // Mettre à jour la dernière activité

@@ -180,6 +180,14 @@ export default class UserModel extends Model {
   })
   hireDate?: Date;
 
+  @AllowNull(false)
+  @Column({
+    type: DataType.BOOLEAN,
+    field: 'is_active',
+    defaultValue: true,
+  })
+  isActive!: boolean;
+
   @ForeignKey(() => EmploymentStatus)
   @AllowNull(true)
   @Index('idx_users_employment_status_id')

@@ -1,6 +1,18 @@
 import { z } from 'zod';
 import { coerceNumber } from "../../db/config/helper_coerce.config";
 
+const coerceBoolean = z.preprocess((val) => {
+  if (typeof val === 'boolean') return val;
+
+  if (typeof val === 'string') {
+    const normalized = val.trim().toLowerCase();
+    if (['true', '1', 'yes', 'on'].includes(normalized)) return true;
+    if (['false', '0', 'no', 'off'].includes(normalized)) return false;
+  }
+
+  return val;
+}, z.boolean({ message: 'is_active must be a boolean' }));
+
 // ==================== Schema de base commun ====================
 const userBaseSchema = z.object({
   email: z.string()
@@ -67,6 +79,8 @@ const userBaseSchema = z.object({
     })
     .optional()
     .nullable(),
+
+  is_active: coerceBoolean.optional(),
 });
 
 // ==================== Schema pour l'inscription (Register) ====================

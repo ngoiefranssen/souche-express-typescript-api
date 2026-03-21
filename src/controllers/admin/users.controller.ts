@@ -18,11 +18,13 @@ import {
 } from '../../schemas/admin/users.schema';
 import { processFileUpload } from '../../utils/form_data_parser';
 import { UPLOAD_CONFIGS } from '../../db/config/upload.config';
+import { revokeAllUserTokens } from '../../utils/jwt';
 import Role from '../../models/admin/role.model';
 import User from '../../models/admin/users.model';
 import Profile from '../../models/admin/profil.model';
 import EmploymentStatus from '../../models/admin/employment_status.model';
 import Permission from '../../models/permission/permission.model';
+import UserSession from '../../models/auth/user.session.model';
 
 
 /**
@@ -45,6 +47,7 @@ export const registerUser = asyncHandler(
       hire_date,
       employment_status_id,
       profile_id,
+      is_active,
     }: RegisterInput = (req as ValidatedRequest).validated.body;
 
     try {
@@ -117,6 +120,7 @@ export const registerUser = asyncHandler(
         hireDate: hire_date || null,
         employment_status_id: employment_status_id || null,
         profile_id,
+        isActive: is_active ?? true,
       });
 
       res.status(201).json({
@@ -131,6 +135,7 @@ export const registerUser = asyncHandler(
           phone: user.phone,
           profilePhoto: user.profilePhoto,
           profileId: user.profile_id,
+          isActive: user.isActive,
           createdAt: user.createdAt,
         },
       });
@@ -225,6 +230,7 @@ export const getUser = asyncHandler(
           label: user.profile.label,
           description: user.profile.description,
         } : null,
+        isActive: user.isActive,
         roles: user.profile?.roles?.map(role => ({
           id: role.id,
           label: role.label,
@@ -329,6 +335,7 @@ export const listUsers = asyncHandler(
         profileLabel: user.profile?.label || null,
         employmentStatusId: user.employment_status_id,
         employmentStatusLabel: user.employmentStatus?.label || null,
+        isActive: user.isActive,
         hireDate: user.hireDate,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
@@ -399,6 +406,8 @@ export const updateUser = asyncHandler(
       if (!user) {
         throw new NotFoundError('User not found');
       }
+
+      const wasActive = user.isActive;
 
       // Check email uniqueness if being updated
       if (body.email) {
@@ -482,6 +491,9 @@ export const updateUser = asyncHandler(
       if (body.profile_id !== undefined) {
         updateData.profile_id = body.profile_id;
       }
+      if (body.is_active !== undefined) {
+        updateData.isActive = body.is_active;
+      }
       if (body.password) {
         updateData.passwordHash = body.password;
       }
@@ -524,6 +536,20 @@ export const updateUser = asyncHandler(
       // Update user
       await user.update(updateData);
 
+      // Révoquer immédiatement l'accès si le compte vient d'être désactivé
+      if (wasActive && user.isActive === false) {
+        await UserSession.update(
+          { isActive: false },
+          {
+            where: {
+              userId: user.id,
+              isActive: true,
+            },
+          }
+        );
+        await revokeAllUserTokens(user.id, 'user_deactivated');
+      }
+
       res.status(200).json({
         status: 'success',
         message: 'User updated successfully',
@@ -537,6 +563,7 @@ export const updateUser = asyncHandler(
           profilePhoto: user.profilePhoto,
           profileId: user.profile_id,
           employmentStatusId: user.employment_status_id,
+          isActive: user.isActive,
           updatedAt: user.updatedAt,
         },
       });
@@ -631,6 +658,7 @@ export const restoreUser = asyncHandler(
           username: user.username,
           firstName: user.firstName,
           lastName: user.lastName,
+          isActive: user.isActive,
         },
       });
     } catch (error: any) {
