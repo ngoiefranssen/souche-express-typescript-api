@@ -8,6 +8,7 @@ import UserModel from '../../models/admin/users.model';
 import ProfileModel from '../../models/admin/profil.model';
 import RoleModel from '../../models/admin/role.model';
 import EmploymentStatusModel from '../../models/admin/employment_status.model';
+import { hashEmailForLookup, normalizeEmail } from '../../utils/field_encryption';
 
 /**
  * Crée un utilisateur administrateur par défaut
@@ -56,8 +57,9 @@ async function seedAdminUser() {
     }
 
     // 5. Vérifier/Créer l'utilisateur admin
+    const adminEmail = normalizeEmail('admin07@admin.com');
     const existingAdmin = await UserModel.findOne({
-      where: { email: 'admin07@admin.com' },
+      where: { emailHash: hashEmailForLookup(adminEmail) },
     });
 
     if (existingAdmin) {
@@ -66,7 +68,7 @@ async function seedAdminUser() {
       console.log(`username: ${existingAdmin.username}`);
     } else {
       await UserModel.create({
-        email: 'admin07@admin.com',
+        email: adminEmail,
         username: 'admin',
         passwordHash: 'Admin@123', // Sera hashé automatiquement par le hook BeforeCreate
         firstName: 'Super',

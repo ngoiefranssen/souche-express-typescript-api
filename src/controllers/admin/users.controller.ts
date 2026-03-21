@@ -25,6 +25,23 @@ import Profile from '../../models/admin/profil.model';
 import EmploymentStatus from '../../models/admin/employment_status.model';
 import Permission from '../../models/permission/permission.model';
 import UserSession from '../../models/auth/user.session.model';
+import { hashEmailForLookup, normalizeEmail } from '../../utils/field_encryption';
+
+const resolveUniqueConstraintMessage = (error: any): string => {
+  const uniqueFields = Array.isArray(error?.errors)
+    ? error.errors.map((item: any) => item?.path).filter(Boolean)
+    : [];
+
+  if (uniqueFields.includes('email_hash') || uniqueFields.includes('email')) {
+    return 'This email is already in use';
+  }
+
+  if (uniqueFields.includes('username')) {
+    return 'This username is already in use';
+  }
+
+  return 'A unique field is already in use';
+};
 
 
 /**
@@ -52,9 +69,10 @@ export const registerUser = asyncHandler(
 
     try {
       // Check if email already exists
+      const normalizedEmail = normalizeEmail(email);
       const existingUser = await User.findOne({
         where: {
-          email: email.toLowerCase().trim()
+          emailHash: hashEmailForLookup(normalizedEmail),
         }
       });
 
@@ -109,14 +127,14 @@ export const registerUser = asyncHandler(
 
       // Create user
       const user = await User.create({
-        email: email.toLowerCase().trim(),
+        email: normalizedEmail,
         username: username.toLowerCase().trim(),
         passwordHash: password,
         firstName: first_name.trim(),
         lastName: last_name.trim(),
         phone: phone?.trim() || null,
         profilePhoto: profilePhotoUrl,
-        salary: salary || null,
+        salary: salary ?? null,
         hireDate: hire_date || null,
         employment_status_id: employment_status_id || null,
         profile_id,
@@ -148,11 +166,7 @@ export const registerUser = asyncHandler(
       }
 
       if (error.name === 'SequelizeUniqueConstraintError') {
-        throw new ConflictError('This email is already in use');
-      }
-
-      if (error.name === 'SequelizeUniqueConstraintError') {
-        throw new ConflictError('This username is already in use');
+        throw new ConflictError(resolveUniqueConstraintMessage(error));
       }
 
       if (error.name === 'SequelizeForeignKeyConstraintError') {
@@ -200,7 +214,7 @@ export const getUser = asyncHandler(
           }
         ],
         attributes: {
-          exclude: ['passwordHash', 'deletedAt']
+          exclude: ['passwordHash', 'deletedAt', 'emailHash']
         }
       });
 
@@ -276,12 +290,19 @@ export const listUsers = asyncHandler(
 
     if (search?.trim()) {
       const searchTerm = search.trim();
-      whereClause[Op.or] = [
-        { email: { [Op.iLike]: `%${searchTerm}%` } },
+      const searchConditions: any[] = [
         { username: { [Op.iLike]: `%${searchTerm}%` } },
         { firstName: { [Op.iLike]: `%${searchTerm}%` } },
         { lastName: { [Op.iLike]: `%${searchTerm}%` } },
       ];
+
+      if (searchTerm.includes('@')) {
+        searchConditions.push({
+          emailHash: hashEmailForLookup(normalizeEmail(searchTerm)),
+        });
+      }
+
+      whereClause[Op.or] = searchConditions;
     }
 
     if (statut !== undefined) {
@@ -311,7 +332,7 @@ export const listUsers = asyncHandler(
           }
         ],
         attributes: {
-          exclude: ['passwordHash', 'deletedAt']
+          exclude: ['passwordHash', 'deletedAt', 'emailHash']
         }
       });
 
@@ -411,11 +432,10 @@ export const updateUser = asyncHandler(
 
       // Check email uniqueness if being updated
       if (body.email) {
+        const normalizedEmail = normalizeEmail(body.email);
         const duplicateUser = await User.findOne({
           where: {
-            email: {
-              [Op.iLike]: body.email.trim()
-            },
+            emailHash: hashEmailForLookup(normalizedEmail),
             id: {
               [Op.ne]: id
             }
@@ -465,7 +485,7 @@ export const updateUser = asyncHandler(
       const updateData: any = {};
 
       if (body.email !== undefined) {
-        updateData.email = body.email.toLowerCase().trim();
+        updateData.email = normalizeEmail(body.email);
       }
       if (body.username !== undefined) {
         updateData.username = body.username.toLowerCase().trim();
@@ -576,11 +596,7 @@ export const updateUser = asyncHandler(
       }
 
       if (error.name === 'SequelizeUniqueConstraintError') {
-        throw new ConflictError('This username is already in use');
-      }
-
-      if (error.name === 'SequelizeUniqueConstraintError') {
-        throw new ConflictError('This username is already in use');
+        throw new ConflictError(resolveUniqueConstraintMessage(error));
       }
 
       if (error.name === 'SequelizeForeignKeyConstraintError') {

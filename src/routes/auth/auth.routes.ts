@@ -15,6 +15,9 @@ const router = Router();
 router.post('/oauth2/signin/authorized', validate(loginSchema), oauthAuthorize);
 
 // Logout - révoque tous les tokens
+router.post('/signout/oauth2/authorized', authenticateToken, oauthLogout);
+
+// Compatibilité rétroactive (ancienne route avec faute de frappe)
 router.post('/singout/oauth2/authorized', authenticateToken, oauthLogout);
 
 // Refresh - renouvelle l'access token

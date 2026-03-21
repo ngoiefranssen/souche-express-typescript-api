@@ -25,6 +25,10 @@ const envSchema = z.object({
   
   // Session
   SESSION_SECRET: z.string().min(32, 'SESSION_SECRET doit faire au moins 32 caractères'),
+
+  // Chiffrement applicatif des champs sensibles (recommandé en production)
+  DATA_ENCRYPTION_KEY: z.string().min(32).optional(),
+  DATA_HASH_KEY: z.string().min(32).optional(),
   
   // Rate Limiting
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(900000),

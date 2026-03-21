@@ -109,7 +109,9 @@ app.use(
     createParentPath: true,
     useTempFiles: true,
     tempFileDir: '/tmp/',
-    debug: env.NODE_ENV === 'development',
+    // Evite les logs bruyants "Request is not eligible for file upload!"
+    // sur les routes JSON standards (ex: logout).
+    debug: false,
   })
 );
 

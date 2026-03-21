@@ -12,6 +12,7 @@ import {
   revokeAllUserTokens,
 } from '../../utils/jwt';
 import { logLogin, logLoginFailed, logLogout } from '../../utils/audit';
+import { hashEmailForLookup, normalizeEmail } from '../../utils/field_encryption';
 
 export const oauthAuthorize = async (
   req: Request<{}, {}, LoginInput>,
@@ -20,10 +21,11 @@ export const oauthAuthorize = async (
 ) => {
   try {
     const { email, password } = req.body;
+    const normalizedEmail = normalizeEmail(email);
 
     // Rechercher l'utilisateur par email
     const user = await User.findOne({
-      where: { email },
+      where: { emailHash: hashEmailForLookup(normalizedEmail) },
       include: [
         { association: 'profile' },
         { association: 'employmentStatus' }
@@ -33,7 +35,7 @@ export const oauthAuthorize = async (
     if (!user) {
       // Log échec de connexion
       await logLoginFailed(
-        email,
+        normalizedEmail,
         'user_not_found',
         req.ip || req.socket.remoteAddress
       );
@@ -42,7 +44,7 @@ export const oauthAuthorize = async (
 
     if (!user.isActive) {
       await logLoginFailed(
-        email,
+        normalizedEmail,
         'user_inactive',
         req.ip || req.socket.remoteAddress
       );
@@ -58,7 +60,7 @@ export const oauthAuthorize = async (
     if (!isPasswordValid) {
       // Log échec de connexion
       await logLoginFailed(
-        email,
+        normalizedEmail,
         'invalid_password',
         req.ip || req.socket.remoteAddress
       );
@@ -142,12 +144,14 @@ export const oauthLogout = async (
 
     // Désactiver la session en base de données
     const session = await UserSession.findOne({
-      where: { token, isActive: true }
+      where: { token, userId, isActive: true }
     });
 
-    if (session) {
-      await session.update({ isActive: false });
+    if (!session) {
+      throw new AppError(401, 'Session invalide ou expirée');
     }
+
+    await session.update({ isActive: false });
 
     // Révoquer tous les refresh tokens de l'utilisateur
     await revokeAllUserTokens(userId, 'logout');
